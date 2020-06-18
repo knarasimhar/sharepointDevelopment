@@ -112,7 +112,7 @@ https://<IP>api/Pipflow/spgetTaskDetailsByuser?listname=<tasklist>&ListitemId=<4
   eg url path : http://localhost:56643/api/Pipflow/spgetTaskDetailsByuser?listname=tasklist&ListitemId=449
 # end 
 7.
-# Get the sharepont Tasks list Item  based on TItle and Taskuser
+# Get the sharepont Tasks list Item  based on TItle,Taskuser and ReleatedItems
 
 http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>&ReleatedItems=<, separate Main List IDs >
   
