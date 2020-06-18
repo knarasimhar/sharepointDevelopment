@@ -114,24 +114,25 @@ https://<IP>api/Pipflow/spgetTaskDetailsByuser?listname=<tasklist>&ListitemId=<4
 7.
 # Get the sharepont Tasks list Item  based on TItle and Taskuser
 
-http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>
+http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>&ReleatedItems=<, separate Main List IDs >
   
   Method type : GET or POST
   
   Request parameters:
              Listname : Name of the list 
              Taskuser : Pass user name
+             ReleatedItems : ,(coma) separate Main List IDs or single id
              
   Response output:
   
-              success: "[{\"id\":\"1\",\"title\":\"new task assing by         System Account\",\"status\":\"Completed\",\"remarks\":null,\"taskoutcome\":\"Approved\",\"Modified_By\":\"System Account\",\"Modified_By_id\":\"1073741823\",\"Created_By\":\"SharePoint App\",\"Created_By_id\":\"1073741822\",\"assigned_to\":\"sp admin\",\"assigned_to_id\":\"1\",\"Modified_Date\":null},{\"id\":\"2\",\"title\":\"new task assing by         System Account\",\"status\":\"Not Started\",\"remarks\":null,\"taskoutcome\":\"\",\"Modified_By\":\"SharePoint App\",\"Modified_By_id\":\"1073741822\",\"Created_By\":\"SharePoint App\",\"Created_By_id\":\"1073741822\",\"assigned_to\":\"sp admin\",\"assigned_to_id\":\"1\",\"Modified_Date\":null},{\"id\":\"3\",\"title\":\"new task assing by         System Account\",\"status\":\"Not Started\",\"remarks\":null,\"taskoutcome\":\"\",\"Modified_By\":\"SharePoint App\",\"Modified_By_id\":\"1073741822\",\"Created_By\":\"SharePoint App\",\"Created_By_id\":\"1073741822\",\"assigned_to\":\"sp admin\",\"assigned_to_id\":\"1\",\"Modified_Date\":null},{\"id\":\"4\",\"title\":\"new task assing by         System Account\",\"status\":\"Completed\",\"remarks\":null,\"taskoutcome\":\"Reject to Assignee\",\"Modified_By\":\"System Account\",\"Modified_By_id\":\"1073741823\",\"Created_By\":\"SharePoint App\",\"Created_By_id\":\"1073741822\",\"assigned_to\":\"sp admin\",\"assigned_to_id\":\"1\",\"Modified_Date\":null},{\"id\":\"5\",\"title\":\"new task assing by         System Account\",\"status\":\"Not Started\",\"remarks\":null,\"taskoutcome\":\"\",\"Modified_By\":\"SharePoint App\",\"Modified_By_id\":\"1073741822\",\"Created_By\":\"SharePoint App\",\"Created_By_id\":\"1073741822\",\"assigned_to\":\"sp admin\",\"assigned_to_id\":\"1\",\"Modified_Date\":null}]"
+              success: [{"id":"482","title":"Task start and assing by i:0#.w|mylabsp\\spm","status":"Not Started","remarks":null,"taskoutcome":"","RelatedItems":"61","Modified_By":"SharePoint App","Modified_By_id":"1073741822","Created_By":"SharePoint App","Created_By_id":"1073741822","assigned_to":"SPM","assigned_to_id":"26","Modified_Date":null},{"id":"483","title":"Task start and assing by i:0#.w|mylabsp\\spm","status":"Not Started","remarks":null,"taskoutcome":"","RelatedItems":"56","Modified_By":"SharePoint App","Modified_By_id":"1073741822","Created_By":"SharePoint App","Created_By_id":"1073741822","assigned_to":"SPM","assigned_to_id":"26","Modified_Date":null},{"id":"485","title":"Task start and assing by i:0#.w|mylabsp\\spm","status":"Not Started","remarks":null,"taskoutcome":"","RelatedItems":"51","Modified_By":"SharePoint App","Modified_By_id":"1073741822","Created_By":"SharePoint App","Created_By_id":"1073741822","assigned_to":"SPM","assigned_to_id":"26","Modified_Date":null}]
               fail:  exception string will send
   
-  eg url path : http://localhost:56643/api/Pipflow/spgetTaskDetails?listname=tasklist&Taskuser=sdfdf
+  eg url path : http://localhost:56643/api/Pipflow/spgetTaskDetails?listname&taskuser=spm&ReleatedItems=61,51,56
 # end 
 8.
 # Get user info based on login details 
-https://<IP>/api/Pipflow/spcheckuser?uname=<spm>&pwd=<pip@123>
+https://<IP>/api/Pipflow/spgetuserinfo?uname=<spm>&pwd=<pip@123>
   
   Method type : GET or POST
   
@@ -140,7 +141,7 @@ https://<IP>/api/Pipflow/spcheckuser?uname=<spm>&pwd=<pip@123>
              pwd : password of the user
   Response output:
   
-              success: "{\"title\":\"MD\",\"Id\":\"27\",\"LoginName\":\"i:0#.w|mylabsp\\\\md\",\"Emailid\":null}"
+              success: {"title":"SPM","Id":"26","LoginName":"i:0#.w|mylabsp\\spm","Emailid":null}
               fail:  Error message
 Eg link: 
 http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
