@@ -157,3 +157,24 @@ Eg link:
 http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
 
 # end 
+
+9.
+# Get user workflow events details based on user
+https://<IP>/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
+  
+  Method type : GET or POST
+  
+  Request parameters:
+  
+             listname: optional set to null
+             eventuser : send the sharepoint/login user name as parameter
+             
+  Response output:
+  
+              success: [{"id":"4","title":"SNC department flow","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"30","approved_to":"SND","rejected_to_id":"28","rejected_to":"CA","flowevent":""},{"id":"10","title":"SNC to MD flow","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"","approved_to":"","rejected_to_id":"27","rejected_to":"MD","flowevent":"reassign"},{"id":"11","title":"SNC to JR SNC","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"33","approved_to":"JR SNC","rejected_to_id":"29","rejected_to":"SNC","flowevent":"assignetojrsnc"},{"id":"12","title":"SNC to Pre PDSPOC","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"34","approved_to":"PrePD SPOC","rejected_to_id":"29","rejected_to":"SNC","flowevent":"assigntoprepdspoc"},{"id":"13","title":"SNC to PM COST PDSPOC ","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"35","approved_to":"PMCPD SPOC","rejected_to_id":"29","rejected_to":"SNC","flowevent":"assigntosnctopmcpdspoc"},{"id":"14","title":"SNC to Post COST PDSPOC","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"36","approved_to":"POSTPD SPOC","rejected_to_id":"29","rejected_to":"SNC","flowevent":"assigntosnctopostpdsdspoc"}]
+              fail:  Error message
+Eg link: 
+http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
+
+live: http://40.70.16.29:8080/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
+# end 
