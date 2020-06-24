@@ -86,7 +86,8 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
              percentComplete : 1 for 100%
              comments : user comments
              createdby : user login name
-            assignevent : (empty),assigntosnc,assignetojrsnc,assigntoprepdspoc,assigntoprepdspoc,assigntosnctopmcpdspoc,assigntosnctopmcpdspoc,assigntosnctopostpdsdspoc
+             assignevent : (empty), assigntosnc , assignetojrsnc, assigntoprepdspoc, assigntoprepdspoc , assigntosnctopmcpdspoc, assigntosnctopmcpdspoc,                                    assigntosnctopostpdsdspoc
+ 
   Response output: {"Message":"Success"}
              fail:  exception string will send
   
