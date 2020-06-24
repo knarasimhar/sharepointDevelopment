@@ -10,6 +10,7 @@ https://<IP>/api/Pipflow/spcheckuser?uname=<spm>&pwd=<pip@123>
   Method type : GET or POST
   
   Request parameters:
+  
              uname: user name
              pwd : password of the user
   Response output:
@@ -27,6 +28,7 @@ https://<IP>/api/Pipflow/spgetListByName?Listname=<pipflow1>
   Method type : GET or POST
   
   Request parameters:
+  
              Listname : Name of the list 
              
   Response output:
@@ -45,6 +47,7 @@ https://<IP>/api/Pipflow/spsetFMR?fmrid=<fmrid>&remarks=<remarks>&Listname=<List
   Method type : GET or POST
   
   Request parameters:
+  
              fmrid : Send details of FMR      
              remarks : Send remarks
              Listname : Name of the list 
@@ -64,6 +67,7 @@ https://<IP>api/Pipflow/spgetListItemByID?listname=<pipflow1>&ListitemId=<43>
   Method type : GET or POST
   
   Request parameters:
+  
              Listname : Name of the list 
              ListitemId : LIst item id
              
@@ -82,6 +86,7 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
   Method type : GET or POST
   
   Request parameters:
+  
              status : Approved or Rejected or Assign to MD 
              percentComplete : 1 for 100%
              comments : user comments
@@ -103,6 +108,7 @@ https://<IP>api/Pipflow/spgetTaskDetailsByuser?listname=<tasklist>&ListitemId=<4
   Method type : GET or POST
   
   Request parameters:
+  
              Listname : Name of the list 
              ListitemId : LIst item id
              
@@ -121,6 +127,7 @@ http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>
   Method type : GET or POST
   
   Request parameters:
+  
              Listname : Name of the list 
              Taskuser : Pass user name
              ReleatedItems : ,(coma) separate Main List IDs or single id
@@ -139,6 +146,7 @@ https://<IP>/api/Pipflow/spgetuserinfo?uname=<spm>&pwd=<pip@123>
   Method type : GET or POST
   
   Request parameters:
+  
              uname: user name
              pwd : password of the user
   Response output:
