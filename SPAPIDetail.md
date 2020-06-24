@@ -81,7 +81,7 @@ https://<IP>api/Pipflow/spgetListItemByID?listname=<pipflow1>&ListitemId=<43>
 5.
 # Set the sharepont Task list Item   based on status,percentcomplete,comments,taskid and assignevent
 
-https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<spm>&assignevent=<assigntosvn>
+https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<spm>&assignevent=<eventid>
   
   Method type : GET or POST
   
@@ -91,7 +91,8 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
              percentComplete : 1 for 100%
              comments : user comments
              createdby : user login name
-             assignevent : (empty), assigntosnc , assignetojrsnc, assigntoprepdspoc, assigntoprepdspoc , assigntosnctopmcpdspoc, assigntosnctopmcpdspoc,                                    assigntosnctopostpdsdspoc
+             assignevent : send the event id as integer based on 9th API details. 
+             note smaple events details : (empty), assigntosnc , assignetojrsnc, assigntoprepdspoc, assigntoprepdspoc , assigntosnctopmcpdspoc, assigntosnctopmcpdspoc,assigntosnctopostpdsdspoc 
  
   Response output: {"Message":"Success"}
              fail:  exception string will send
