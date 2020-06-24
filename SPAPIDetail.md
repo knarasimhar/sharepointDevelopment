@@ -79,7 +79,7 @@ https://<IP>api/Pipflow/spgetListItemByID?listname=<pipflow1>&ListitemId=<43>
   eg url path : http://localhost:56643/api/Pipflow/spgetListItemByID?listname=pipflow1&ListitemId=43
 # end 
 5.
-# Set the sharepont Task list Item   based on status,percentcomplete,comments and taskid
+# Set the sharepont Task list Item   based on status,percentcomplete,comments,taskid and assignevent
 
 https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<spm>&assignevent=<assigntosvn>
   
