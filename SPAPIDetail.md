@@ -77,7 +77,7 @@ https://<IP>api/Pipflow/spgetListItemByID?listname=<pipflow1>&ListitemId=<43>
 5.
 # Set the sharepont Task list Item   based on status,percentcomplete,comments and taskid
 
-https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<spm>
+https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<spm>&assignevent=<assigntosvn>
   
   Method type : GET or POST
   
@@ -86,12 +86,13 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
              percentComplete : 1 for 100%
              comments : user comments
              createdby : user login name
-  Response output:
+#            assignevent : (empty),assigntosnc,assignetojrsnc,assigntoprepdspoc,assigntoprepdspoc,assigntosnctopmcpdspoc,assigntosnctopmcpdspoc,assigntosnctopostpdsdspoc
+  Response output: {"Message":"Success"}
+             fail:  exception string will send
   
-              success: "[{\"id\":null,\"title\":\"1.1.1.1\",\"status\":\"inprogress\",\"remarks\":\"teswting rom data\",\"taskoutcome\":null,\"Modified_By\":null,\"Modified_By_id\":null,\"Created_By\":\"Microsoft.SharePoint.Client.FieldUserValue\",\"Created_By_id\":null,\"assigned_to\":\"Microsoft.SharePoint.Client.FieldUserValue\",\"assigned_to_id\":null,\"Modified_Date\":\"Microsoft.SharePoint.Client.FieldUserValue\"}]"
-              fail:  exception string will send
+  eg url path : http://localhost:56643/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=449&createdby=spm&assignevent=assigntosvn
   
-  eg url path : http://localhost:56643/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=449&createdby=spm
+  live url : http://40.70.16.29:8080/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=743&createdby=spm&assignevent=assigntosvn
 # end 
 6.
 # Get the sharepont tasks  based on list and task item id
