@@ -97,9 +97,9 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
   Response output: {"Message":"Success"}
              fail:  exception string will send
   
-  eg url path : http://localhost:56643/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=449&createdby=spm&assignevent=assigntosvn
+  eg url path : http://localhost:56643/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=449&createdby=spm&assignevent=1
   
-  live url : http://40.70.16.29:8080/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=743&createdby=spm&assignevent=assigntosvn
+  live url : http://40.70.16.29:8080/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=743&createdby=spm&assignevent=1
 # end 
 6.
 # Get the sharepont tasks  based on list and task item id
