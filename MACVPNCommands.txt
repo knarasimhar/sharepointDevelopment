@@ -1,0 +1,84 @@
+Viswanaths-Mac-mini:mac dalabs$ cd azure-vpn-point2site-master
+-bash: cd: azure-vpn-point2site-master: No such file or directory
+Viswanaths-Mac-mini:mac dalabs$ ls
+1_createPrivateKey.sh		5_removeSpaces.sh		devtesting-ip.key
+2_convertP12ToKey.sh		devtesting-ip.crt		devtesting-ip.p12
+3_createCsr.sh			devtesting-ip.crt-nospaces.crt	devtesting-ip1.p12
+4_createCert.sh			devtesting-ip.csr		narasimha_VNG
+Viswanaths-Mac-mini:mac dalabs$ openssl pkcs12 -in devtesting-ip.p12 -nodes -out devtesting-ip.key -nocerts
+Enter Import Password:
+Can't read Password
+Viswanaths-Mac-mini:mac dalabs$ openssl pkcs12 -in devtesting-ip.p12 -nodes -out devtesting-ip.key -nocerts
+Error opening input file devtesting-ip.p12
+devtesting-ip.p12: No such file or directory
+Viswanaths-Mac-mini:mac dalabs$ openssl pkcs12 -in devtesting-ip.p12 -nodes -out devtesting-ip.key -nocerts
+Error opening input file devtesting-ip.p12
+devtesting-ip.p12: No such file or directory
+Viswanaths-Mac-mini:mac dalabs$ openssl pkcs12 -in devtesting-ip1.p12 -nodes -out devtesting-ip1.key -nocerts
+Enter Import Password:
+MAC verified OK
+Viswanaths-Mac-mini:mac dalabs$ openssl req -new -key devtesting-ip1.key -out devtesting-ip1.csr
+You are about to be asked to enter information that will be incorporated
+into your certificate request.
+What you are about to enter is what is called a Distinguished Name or a DN.
+There are quite a few fields but you can leave some blank
+For some fields there will be a default value,
+If you enter '.', the field will be left blank.
+-----
+Country Name (2 letter code) []:IN
+State or Province Name (full name) []:Telangana
+Locality Name (eg, city) []:hyderabad
+Organization Name (eg, company) []:narasimha
+Organizational Unit Name (eg, section) []:IT
+Common Name (eg, fully qualified host name) []:devtesting-ip.microsoft.com
+Email Address []:
+
+Please enter the following 'extra' attributes
+to be sent with your certificate request
+A challenge password []:
+Viswanaths-Mac-mini:mac dalabs$ openssl x509 -req -days 3650 -in devtesting-ip1.csr -signkey devtesting-ip1.key -out devtesting-ip1.crt
+Signature ok
+subject=/C=IN/ST=Telangana/L=hyderabad/O=narasimha/OU=IT/CN=devtesting-ip.microsoft.com
+Getting Private key
+Viswanaths-Mac-mini:mac dalabs$ cat devtesting-ip1.crt
+-----BEGIN CERTIFICATE-----
+MIIDdDCCAlwCCQC14/seT5t9ujANBgkqhkiG9w0BAQUFADB8MQswCQYDVQQGEwJJ
+TjESMBAGA1UECAwJVGVsYW5nYW5hMRIwEAYDVQQHDAloeWRlcmFiYWQxEjAQBgNV
+BAoMCW5hcmFzaW1oYTELMAkGA1UECwwCSVQxJDAiBgNVBAMMG2RldnRlc3Rpbmct
+aXAubWljcm9zb2Z0LmNvbTAeFw0yMDA1MTYxMTQ2NTNaFw0zMDA1MTQxMTQ2NTNa
+MHwxCzAJBgNVBAYTAklOMRIwEAYDVQQIDAlUZWxhbmdhbmExEjAQBgNVBAcMCWh5
+ZGVyYWJhZDESMBAGA1UECgwJbmFyYXNpbWhhMQswCQYDVQQLDAJJVDEkMCIGA1UE
+AwwbZGV2dGVzdGluZy1pcC5taWNyb3NvZnQuY29tMIIBIjANBgkqhkiG9w0BAQEF
+AAOCAQ8AMIIBCgKCAQEAxwPpYzHZ/35dlMjGY8FmLMnvKDU65FJb/KPuSrLhQ11g
+E8JJKwgpYpVqCU5DxqVKzTI1ZPUjnvfxC3TdV9582wvoRqchH886qt/s/pHXhn98
+9MOS7ULbw/aZ0ZyyK4/5uaxDXgpElNUg3z+gD7uoKHDbRh+23ajeXx1hQAm1piA1
+OkUO2T8i9f6KxSfXdJ9X7++t1KFcZRRRw8L95dWgLKFWYZGWn5jRepRkBDhKmY/N
+eiQ85V3m4Wrp1xpKBIpQF6C9ohGDAUFZXQXmRFBOM+wLl3SCZy7JJjSPEVthDV3l
+wgntWo0HSYMmuUFmkPBgl+VRX2mjA/ygdNY6i17ZqwIDAQABMA0GCSqGSIb3DQEB
+BQUAA4IBAQAO9f+Mz1WQBl8CuTY0AUkItNC0+mQ3thKmbXuBVG1VIRPvgD/M1aG3
+M6befrelpRZdW4EvNsCUYOSAxyOr/6WvkjCWlO5rZnuya0XyNjQHKHn36IGFX15S
+WEbjDauh5002609ZBVhYUMCX4NOL2DeHNPn5t3B0MJR/ZTRd9MghNDAQboC7UQGl
+xDckmfMcZaD2vn/FBAO0eoSAXWmDB3WdQN8vpMJygeIJZDw6w5j6zr2GpU7XvYk4
+B/WYR/9Pog42II4YT//Aiv7sqrpuIix3nPqCRZcIgzgCrApSLNbfFZ/40OCcnXYQ
+BIPeBKROLirzTdAcU7PXAWh3HDalzGPR
+-----END CERTIFICATE-----
+Viswanaths-Mac-mini:mac dalabs$ ls
+1_createPrivateKey.sh		devtesting-ip.crt		devtesting-ip1.csr
+2_convertP12ToKey.sh		devtesting-ip.crt-nospaces.crt	devtesting-ip1.key
+3_createCsr.sh			devtesting-ip.csr		devtesting-ip1.p12
+4_createCert.sh			devtesting-ip.key		narasimha_VNG
+5_removeSpaces.sh		devtesting-ip1.crt
+Viswanaths-Mac-mini:mac dalabs$ ./5_removeSpaces.sh
+Filename where CRT is: 
+devtesting-ip1.crt
+Now copy this Cert into your Azure VPN Gateway config...and download the client based on this Cert
+Then add this new downloaded client cert to your Keychain
+Viswanaths-Mac-mini:mac dalabs$ open devtesting-ip1.crt
+Viswanaths-Mac-mini:mac dalabs$ ls
+1_createPrivateKey.sh		devtesting-ip.crt		devtesting-ip1.crt-nospaces.crt
+2_convertP12ToKey.sh		devtesting-ip.crt-nospaces.crt	devtesting-ip1.csr
+3_createCsr.sh			devtesting-ip.csr		devtesting-ip1.key
+4_createCert.sh			devtesting-ip.key		devtesting-ip1.p12
+5_removeSpaces.sh		devtesting-ip1.crt		narasimha_VNG
+Viswanaths-Mac-mini:mac dalabs$ cat devtesting-ip1.crt-nospaces.crt
+MIIDdDCCAlwCCQC14/seT5t9ujANBgkqhkiG9w0BAQUFADB8MQswCQYDVQQGEwJJTjESMBAGA1UECAwJVGVsYW5nYW5hMRIwEAYDVQQHDAloeWRlcmFiYWQxEjAQBgNVBAoMCW5hcmFzaW1oYTELMAkGA1UECwwCSVQxJDAiBgNVBAMMG2RldnRlc3RpbmctaXAubWljcm9zb2Z0LmNvbTAeFw0yMDA1MTYxMTQ2NTNaFw0zMDA1MTQxMTQ2NTNaMHwxCzAJBgNVBAYTAklOMRIwEAYDVQQIDAlUZWxhbmdhbmExEjAQBgNVBAcMCWh5ZGVyYWJhZDESMBAGA1UECgwJbmFyYXNpbWhhMQswCQYDVQQLDAJJVDEkMCIGA1UEAwwbZGV2dGVzdGluZy1pcC5taWNyb3NvZnQuY29tMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAxwPpYzHZ/35dlMjGY8FmLMnvKDU65FJb/KPuSrLhQ11gE8JJKwgpYpVqCU5DxqVKzTI1ZPUjnvfxC3TdV9582wvoRqchH886qt/s/pHXhn989MOS7ULbw/aZ0ZyyK4/5uaxDXgpElNUg3z+gD7uoKHDbRh+23ajeXx1hQAm1piA1OkUO2T8i9f6KxSfXdJ9X7++t1KFcZRRRw8L95dWgLKFWYZGWn5jRepRkBDhKmY/NeiQ85V3m4Wrp1xpKBIpQF6C9ohGDAUFZXQXmRFBOM+wLl3SCZy7JJjSPEVthDV3lwgntWo0HSYMmuUFmkPBgl+VRX2mjA/ygdNY6i17ZqwIDAQABMA0GCSqGSIb3DQEBBQUAA4IBAQAO9f+Mz1WQBl8CuTY0AUkItNC0+mQ3thKmbXuBVG1VIRPvgD/M1aG3M6befrelpRZdW4EvNsCUYOSAxyOr/6WvkjCWlO5rZnuya0XyNjQHKHn36IGFX15SWEbjDauh5002609ZBVhYUMCX4NOL2DeHNPn5t3B0MJR/ZTRd9MghNDAQboC7UQGlxDckmfMcZaD2vn/FBAO0eoSAXWmDB3WdQN8vpMJygeIJZDw6w5j6zr2GpU7XvYk4B/WYR/9Pog42II4YT//Aiv7sqrpuIix3nPqCRZcIgzgCrApSLNbfFZ/40OCcnXYQBIPeBKROLirzTdAcU7PXAWh3HDalzGPR
