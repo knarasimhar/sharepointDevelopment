@@ -44,6 +44,7 @@ namespace SPPipAPi.Controllers
         [Route("api/Pipflow/spgetuserinfo")]
         // [ActionName("spcheckuser")]
         [HttpGet]
+       
         public HttpResponseMessage spgetuserinfo(string uname, string pwd)
         {
 
@@ -325,7 +326,7 @@ namespace SPPipAPi.Controllers
         [Route("api/Pipflow/spsetTaskItemByID")]
 
         [HttpGet, HttpPost]
-
+       
         public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "")
         {
             // prepare site connection
