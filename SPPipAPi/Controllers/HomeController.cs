@@ -10,7 +10,7 @@ namespace SPPipAPi.Controllers
     {
         public ActionResult Index()
         {
-            ViewBag.Title = "Home Page";
+            ViewBag.Title = "Home Page this is how conntrond";
 
             return View();
         }
