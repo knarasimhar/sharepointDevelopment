@@ -93,7 +93,7 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
              createdby : current login user from UI or u can take from FMR LIST current assigni
              assignevent : send the event id as integer based on 9th API details. 
              assignedto : send the next approval user based on role to user mapping from UI. 
-             note smaple events details : (empty), assigntosnc , assignetojrsnc, assigntoprepdspoc, assigntoprepdspoc , assigntosnctopmcpdspoc, assigntosnctopmcpdspoc,assigntosnctopostpdsdspoc 
+             *Note  : createdby and assignedto parameters should be "user login name" which are mapped to Sharepoint users
  
   Response output: {"Message":"Success"}
              fail:  exception string will send
