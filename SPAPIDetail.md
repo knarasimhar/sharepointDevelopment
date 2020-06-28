@@ -169,7 +169,7 @@ https://<IP>/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
   Request parameters:
   
              listname: optional set to null
-             eventuser : send the sharepoint/login user name as parameter
+             eventuser : send the user role name which is mapped in user creation.
              
   Response output:
   
