@@ -98,7 +98,7 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
   Response output: {"Message":"Success"}
              fail:  exception string will send
   
-  eg url path : http://localhost:56643/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=449&createdby=spm&assignevent=1
+  eg url path : http://localhost:56643/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=449&createdby=spm&assignevent=1assignedto=spm
   
   live url : http://40.70.16.29:8080/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20o&taskid=1008&createdby=md&assignevent=22&assignedto=spm
 # end 
