@@ -81,7 +81,7 @@ https://<IP>api/Pipflow/spgetListItemByID?listname=<pipflow1>&ListitemId=<43>
 5.
 # Set the sharepont Task list Item   based on status,percentcomplete,comments,taskid and assignevent
 
-https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<spm>&assignevent=<eventid>
+https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<created by user>&assignevent=<eventid>&assignedto=<assigned to user>
   
   Method type : GET or POST
   
@@ -90,8 +90,9 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
              status : Approved or Rejected or Assign to MD 
              percentComplete : 1 for 100%
              comments : user comments
-             createdby : user login name
+             createdby : current login user from UI or u can take from FMR LIST current assigni
              assignevent : send the event id as integer based on 9th API details. 
+             assignedto : send the next approval user based on role to user mapping from UI. 
              note smaple events details : (empty), assigntosnc , assignetojrsnc, assigntoprepdspoc, assigntoprepdspoc , assigntosnctopmcpdspoc, assigntosnctopmcpdspoc,assigntosnctopostpdsdspoc 
  
   Response output: {"Message":"Success"}
@@ -99,7 +100,7 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
   
   eg url path : http://localhost:56643/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=449&createdby=spm&assignevent=1
   
-  live url : http://40.70.16.29:8080/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=743&createdby=spm&assignevent=1
+  live url : http://40.70.16.29:8080/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20o&taskid=1008&createdby=md&assignevent=22&assignedto=spm
 # end 
 6.
 # Get the sharepont tasks  based on list and task item id
@@ -172,7 +173,7 @@ https://<IP>/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
              
   Response output:
   
-              success: [{"id":"4","title":"SNC department flow","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"30","approved_to":"SND","rejected_to_id":"28","rejected_to":"CA","flowevent":""},{"id":"10","title":"SNC to MD flow","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"","approved_to":"","rejected_to_id":"27","rejected_to":"MD","flowevent":"reassign"},{"id":"11","title":"SNC to JR SNC","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"33","approved_to":"JR SNC","rejected_to_id":"29","rejected_to":"SNC","flowevent":"assignetojrsnc"},{"id":"12","title":"SNC to Pre PDSPOC","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"34","approved_to":"PrePD SPOC","rejected_to_id":"29","rejected_to":"SNC","flowevent":"assigntoprepdspoc"},{"id":"13","title":"SNC to PM COST PDSPOC ","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"35","approved_to":"PMCPD SPOC","rejected_to_id":"29","rejected_to":"SNC","flowevent":"assigntosnctopmcpdspoc"},{"id":"14","title":"SNC to Post COST PDSPOC","assigned_to":"SNC","assigned_to_id":"29","approved_to_id":"36","approved_to":"POSTPD SPOC","rejected_to_id":"29","rejected_to":"SNC","flowevent":"assigntosnctopostpdsdspoc"}]
+              success: [{"id":"4","title":"SNC","arole":"PDSPOC","rrole":"SNC"},{"id":"18","title":"SNC","arole":"SND","rrole":"SNC"}]
               fail:  Error message
 Eg link: 
 http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
