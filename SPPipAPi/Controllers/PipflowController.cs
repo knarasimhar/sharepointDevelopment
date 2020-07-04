@@ -20,6 +20,7 @@ using SP = Microsoft.SharePoint.Client;
 using System.Configuration;
 using System.Security;
 using System.Web;
+using System.Net.Http.Headers;
 
 namespace SPPipAPi.Controllers
 {
@@ -27,7 +28,7 @@ namespace SPPipAPi.Controllers
     {
         // GET api/values/5
        
-        String strSiteURL = "http://sharepoint2/sites/teamsiteex/PipFlowSite", strUSER="spuser2",strPWD="User@123#";
+        String strSiteURL = "http://sharepoint2/sites/teamsiteex/PipFlowSite", strUSER="spuser2",strPWD="User@123#",strADUserURL="";
        
         public PipflowController()
         {
@@ -37,6 +38,9 @@ namespace SPPipAPi.Controllers
                 strUSER = ConfigurationManager.AppSettings["SITE_URL_USER"].ToString();
             if (ConfigurationManager.AppSettings["SITE_URL_PWD"] != null)
                 strPWD = ConfigurationManager.AppSettings["SITE_URL_PWD"].ToString();
+            if (ConfigurationManager.AppSettings["AD_USER_URL"] != null)
+                strADUserURL = ConfigurationManager.AppSettings["AD_USER_URL"].ToString();
+            
 
             //strPWD = HttpUtility.UrlEncode(strPWD);
         }
@@ -339,15 +343,32 @@ namespace SPPipAPi.Controllers
                 SP.List oList = clientContext.Web.Lists.GetByTitle("Workflow Tasks");
 
                 SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
+
+               
                 User user = clientContext.Web.EnsureUser(@"i:0#.w|saathispdt\" + HttpUtility.UrlDecode(createdby));
                 clientContext.Load(user);
                 //list2["AssignedTo"] = @"it1";
                 //list2["Completed"] = true;
-                list2["PercentComplete"] = 1;
-                list2["Status"] = status;
-                list2["TaskOutcome"] = status;
-                list2["comments"] = Comments;
-                list2["event"] = assignevent;
+                if (status.ToLower() != "save")
+                {
+                    list2["PercentComplete"] = 1;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = status;
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                }
+                else
+                {
+/*                    Approved, //0
+    Denied,   //1
+    Pending,  //2
+    Draft,    //3
+    Scheduled //4*/
+
+                    list2["_ModerationStatus"] = 3;
+                    list2["PercentComplete"] = percentComplete;
+                    list2["comments"] = Comments;
+                }
                 // list2["Status"] = "Rejected";
                 // list2["TaskOutcome"] = "Rejected";
                 list2.Update();
@@ -361,8 +382,42 @@ namespace SPPipAPi.Controllers
             return getSuccessmessage("Success");
 
         }
-      
 
+        // below for workflow task assign and reject and others tagas 
+        [Route("api/Pipflow/spsetAddorupdteItemByID")]
+        [HttpGet, HttpPost]
+        public HttpResponseMessage spsetAddorupdteItemByID(string status, string Listname,string Comments, string createdby, string itemid,string keyvalue)
+        {
+            // prepare site connection
+            ClientContext clientContext = new ClientContext(strSiteURL);
+            clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
+
+            try
+            {
+                //Get the list items from list
+                SP.List oList = clientContext.Web.Lists.GetByTitle(Listname);
+
+                SP.ListItem list2 = oList.GetItemById(Int32.Parse(itemid));
+                User user = clientContext.Web.EnsureUser(@"i:0#.w|saathispdt\" + HttpUtility.UrlDecode(createdby));
+                clientContext.Load(user);
+                //list2["AssignedTo"] = @"it1";
+                //list2["Completed"] = true;
+                
+                list2["comments"] = Comments;
+               
+                // list2["Status"] = "Rejected";
+                // list2["TaskOutcome"] = "Rejected";
+                list2.Update();
+                clientContext.ExecuteQuery();
+            }
+            catch (Exception ex)
+            {
+
+                return getErrormessage(ex.Message);
+            }
+            return getSuccessmessage("Success");
+
+        }
 
         [Route("api/Pipflow/spgetTaskDetailsByuser")]
 
@@ -668,6 +723,79 @@ namespace SPPipAPi.Controllers
 
 
         }
+        // start user active directory calls to servers
+        [System.Web.Http.Route("api/AduVerify/ADAddUser")]
+        [System.Web.Http.HttpPost]
+        public HttpResponseMessage ADAddUser(CreateUser model)
+        {
+            return getErrormessage("success");
+        }
+        [System.Web.Http.Route("api/AduVerify/getADUsers")]
+        [System.Web.Http.HttpGet, System.Web.Http.HttpPost]
+        public HttpResponseMessage getADUsers(string OUNAMES)
+        {
+
+            using (var client = new HttpClient())
+            {
+                client.BaseAddress = new Uri(strADUserURL);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                // New code:
+                HttpResponseMessage response =  client.GetAsync("api/ADUVerify/getADUsers?oustates=" + OUNAMES).Result ;
+                if (response.IsSuccessStatusCode)
+                {
+                    CreateUser Users = null;// response.Content.ReadAsAsync<List<CreateUser>>();
+                   
+                }
+            }
+            return getErrormessage("success");
+        }
+        /*
+        private  HttpResponseMessage  DoWebRequest(string endpoint, string reqtype,object obj)
+        {
+            HttpClientHandler handler = new HttpClientHandler()
+            {
+                PreAuthenticate = true,
+                UseDefaultCredentials = true
+            };
+
+
+            string reasonPhrase = "";
+            using (var client = new HttpClient(handler))
+            {
+                client.BaseAddress = new Uri(endpoint);
+                client.DefaultRequestHeaders.Accept.Clear();
+                client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+               
+                if (reqtype.ToUpper()=="GET")
+                    var  response = client.GetAsync(endpoint).Result;
+                else 
+                 var  response = client.PostAsJsonAsync(endpoint, obj).Result;
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = response.Content.ReadAsStringAsync().Result;
+                    return result;
+                }
+                else
+                {
+                    reasonPhrase = response.ReasonPhrase;
+                    if (reasonPhrase.ToUpper() == "UNAUTHORIZED")
+                    {
+                        throw new KeyNotFoundException("Not authorized");
+                    }
+                    
+                }
+            }
+        }*/
+        [System.Web.Http.Route("api/AduVerify/ADUpdateUser")]
+        [System.Web.Http.HttpPost]
+        public HttpResponseMessage ADUpdateUser(CreateUser model)
+        {
+            return getErrormessage("success");
+        }
+        // ENd user active directory calls to servers
         private SecureString getSecuredString(string strPWD)
         {
             SecureString strSCPWD = new SecureString();
