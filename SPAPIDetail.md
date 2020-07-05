@@ -199,9 +199,9 @@ https://<IP>/api/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remar
               success: success
               fail:  Error message
 Eg link: 
-http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
+http://localhost:56643/api/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remarks={remarks}&status={status}
 
-live: http://40.70.16.29:8080/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
+live: http://52.172.200.35:2020/sppipapidev/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remarks={remarks}&status={status}
 # end 
 
 # USER start API for Active direcotory USER list , add & update APIS
@@ -219,7 +219,9 @@ https://<IP>/api/Pipflow/getADUsers?OUNAMES={OUNAMES}
              
   Response output:
   
-              success: [{"id":"4","title":"SNC","arole":"PDSPOC","rrole":"SNC"},{"id":"18","title":"SNC","arole":"SND","rrole":"SNC"}]
+              success       {"OU":"STATE","SubOU":null,"UserName":"brajesh","Password":null,"Mobileno":"96508XXXX","Emailid":"varun@dalabs.in","groups":null,"FirstName":"Dr. Beela Rajesh","LastName":"Rajesh","Department":"HFW","ReportingManager":null,"State":null}]
               fail:  Error message
 Eg link: 
-http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
+http://52.172.200.35:2020/sppipapidev/api/Pipflow/getADUsers?OUNAMES=state
+
+2. 
