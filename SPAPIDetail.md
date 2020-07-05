@@ -124,7 +124,7 @@ https://<IP>api/Pipflow/spgetTaskDetailsByuser?listname=<tasklist>&ListitemId=<4
 7.
 # Get the sharepont Tasks list Item  based on TItle,Taskuser and ReleatedItems
 
-http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>&ReleatedItems=<, separate Main List IDs >
+http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>&ReleatedItems=<, separate Main List IDs >&status={status}
   
   Method type : GET or POST
   
@@ -133,6 +133,7 @@ http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>
              Listname : Name of the list 
              Taskuser : Pass user name
              ReleatedItems : ,(coma) separate Main List IDs or single id
+             status : based on rejected/approved/not started task will be getting
              
   Response output:
   
@@ -180,3 +181,45 @@ http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
 
 live: http://40.70.16.29:8080/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
 # end 
+10.
+# FMR list update for sataus and remarks api post
+https://<IP>/api/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remarks={remarks}&status={status}
+  
+  Method type : GET or POST
+  
+  Request parameters:
+  
+             listname: optional set to null
+             fmrspid : send the sharepoint list item ID
+             remarks : remarks send by user
+             status : status updated by user smaple status are inprogress,completed,"RECALL SNC","RECALL MD"
+             
+  Response output:
+  
+              success: success
+              fail:  Error message
+Eg link: 
+http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
+
+live: http://40.70.16.29:8080/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
+# end 
+
+# USER start API for Active direcotory USER list , add & update APIS
+
+1. api/Pipflow/getADUsers?OUNAMES={OUNAMES}
+
+https://<IP>/api/Pipflow/getADUsers?OUNAMES={OUNAMES}
+  
+  Method type : GET
+  
+  Request parameters:
+  
+             OUNAMES: based on Active directory OUs state or national
+             
+             
+  Response output:
+  
+              success: [{"id":"4","title":"SNC","arole":"PDSPOC","rrole":"SNC"},{"id":"18","title":"SNC","arole":"SND","rrole":"SNC"}]
+              fail:  Error message
+Eg link: 
+http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
