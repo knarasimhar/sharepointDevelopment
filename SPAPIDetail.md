@@ -204,7 +204,9 @@ http://localhost:56643/api/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrS
 live: http://52.172.200.35:2020/sppipapidev/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remarks={remarks}&status={status}
 # end 
 
-# USER start API for Active direcotory USER list , add & update APIS
+# Start Active directory USER start API
+
+# for Active direcotory USER list , add & update APIS
 
 1. api/Pipflow/getADUsers?OUNAMES={OUNAMES}
 
@@ -224,4 +226,41 @@ https://<IP>/api/Pipflow/getADUsers?OUNAMES={OUNAMES}
 Eg link: 
 http://52.172.200.35:2020/sppipapidev/api/Pipflow/getADUsers?OUNAMES=state
 
-2. 
+2. <IP>/api/Pipflow/ADAddUser
+
+ Method type : GET or POST
+  
+  Request parameters:
+  
+             JSON BODY :{"OU":"STATE","SubOU":null,"UserName":"brajesh","Password":null,"Mobileno":"96508XXXX","Emailid":"varun@dalabs.in","groups":null,"FirstName":"Dr. Beela Rajesh","LastName":"Rajesh","Department":"HFW","ReportingManager":null,"State":null}
+             POST method 
+             
+  Response output:
+  
+              success: success
+              fail:  Error message
+Eg link: 
+http://localhost:56643/api/Pipflow/ADAddUser
+
+live: http://40.70.16.29:8080/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
+
+3. <IP>/api/Pipflow/ADUpdateUser
+
+ Method type : GET or POST
+  
+  Request parameters:
+  
+             JSON BODY :{"OU":"STATE","SubOU":null,"UserName":"brajesh","Mobileno":"96508XXXX","Emailid":"varun@dalabs.in","groups":null,"FirstName":"Dr. Beela Rajesh","LastName":"Rajesh","Department":"HFW","ReportingManager":null,"State":null}
+             POST method 
+             
+  Response output:
+  
+              success: success
+              fail:  Error message
+Note: only mobile number and emailid updating this veriosn,UserName should be Same as user 
+Eg link: 
+http://localhost:56643/api/Pipflow/ADUpdateUser
+
+live: http://40.70.16.29:8080/api/Pipflow/ADUpdateUser
+
+
