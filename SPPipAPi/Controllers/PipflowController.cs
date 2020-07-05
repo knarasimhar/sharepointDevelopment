@@ -21,15 +21,19 @@ using System.Configuration;
 using System.Security;
 using System.Web;
 using System.Net.Http.Headers;
+using System.Threading.Tasks;
+using System.IO;
+using System.Web.Http.Cors;
 
 namespace SPPipAPi.Controllers
 {
+    [EnableCors(origins: "http://sharepoint2:8081", headers: "*", methods: "*")]
     public class PipflowController : ApiController
     {
         // GET api/values/5
-       
         String strSiteURL = "http://sharepoint2/sites/teamsiteex/PipFlowSite", strUSER="spuser2",strPWD="User@123#",strADUserURL="";
-       
+        string pathValue = ConfigurationManager.AppSettings["SITE_URL"].ToString();
+        string strDomainName = ConfigurationManager.AppSettings["DomainName"].ToString();
         public PipflowController()
         {
             if (ConfigurationManager.AppSettings["SITE_URL"] != null)
@@ -81,6 +85,37 @@ namespace SPPipAPi.Controllers
 
 
         }
+
+        //[System.Web.Http.Route("api/Pipflow/getADUser")]
+
+        //[System.Web.Http.HttpGet, System.Web.Http.HttpPost]
+
+        //public HttpResponseMessage getADUsers(string OUNAMES)
+        //{
+        //    List<CreateUser> userlist = new List<CreateUser>();
+        //    foreach (string OU in OUNAMES.Split(','))
+        //    {
+        //        try
+        //        {
+        //            if (ConfigurationManager.AppSettings["AD_USER_URL"] != null)
+        //            {
+
+        //                string strADUserURL = ConfigurationManager.AppSettings["AD_USER_URL"].ToString();
+        //                string url = strADUserURL + "getADUsers?OUNAMES="+ OUNAMES;
+
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            return getErrormessage(ex.Message);
+        //        }
+
+        //        return getHttpResponseMessage(JsonConvert.SerializeObject(userlist));
+        //    }           
+        //}    
+
+
+
         [Route("api/Pipflow/spcheckuser")]
         // [ActionName("spcheckuser")]
         [HttpGet]
@@ -106,7 +141,7 @@ namespace SPPipAPi.Controllers
         [Route("api/Pipflow/spgetListByName")]
 
         [HttpGet, HttpPost]
-        public HttpResponseMessage spgetListByName(string Listname)
+        public HttpResponseMessage spgetListByName(string Listname,string status = "")
         {
 
             // prepare site connection
@@ -114,7 +149,8 @@ namespace SPPipAPi.Controllers
             {
                 // global parameters<View><Query>
 
-
+                if (status == null) status = "";
+               
                 CamlQuery camlQuery = new CamlQuery();
 
                 camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
@@ -160,7 +196,8 @@ namespace SPPipAPi.Controllers
 
                 foreach (ListItem oListItem in olists)
                 {
-
+                    if (status != "" && oListItem["status"].ToString().ToLower() != status.ToLower())
+                        continue;
                     if (oListItem["currentAssignee"] != null)
                         fuvCurassigned_to = (FieldUserValue)oListItem["currentAssignee"];
                     if (oListItem["ry3a"] != null)
@@ -169,6 +206,8 @@ namespace SPPipAPi.Controllers
                         fuvEditor = (FieldUserValue)oListItem["Editor"];
                     if (oListItem["Author"] != null)
                         fuvAuthor = (FieldUserValue)oListItem["Author"];
+
+
                     respmsg.Add(new pipflow
                     {
                         id = oListItem.Id.ToString(),
@@ -243,6 +282,56 @@ namespace SPPipAPi.Controllers
             return getSuccessmessage("success");
         }
 
+        [Route("api/Pipflow/spupdateFMR")]
+
+        [HttpGet, HttpPost]
+        public HttpResponseMessage spupdateFMR(string Listname,string fmrSPid, string remarks,string status)
+        {
+
+            // prepare site connection
+            try
+            {
+                // global parameters
+
+                CamlQuery camlQuery = new CamlQuery();
+                camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
+
+                // prepare site connection
+                ClientContext clientContext = new ClientContext(strSiteURL);
+                clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
+
+
+
+                List oList;
+                if(Listname != "")
+                    oList = clientContext.Web.Lists.GetByTitle(Listname);
+                else
+                    oList = clientContext.Web.Lists.GetByTitle("pipflow1");
+
+                ListItem targetListItem = oList.GetItemById(fmrSPid);
+
+                
+
+              if(remarks!="")
+                    targetListItem["remarks"] = remarks;
+                if (status != "")
+                    targetListItem["status"] = status;
+
+                //oListItem["Body"] = "Hello World!";
+
+                targetListItem.Update();
+
+                clientContext.ExecuteQuery();
+
+            }
+            catch (Exception ex)
+            {
+                return getErrormessage(ex.Message);
+            }
+
+            return getSuccessmessage("success");
+        }
+
 
         [Route("api/Pipflow/spgetListItemByID")]
 
@@ -254,7 +343,7 @@ namespace SPPipAPi.Controllers
             try
             {
                 // global parameters
-
+               
                 CamlQuery camlQuery = new CamlQuery();
                 camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
                 camlQuery.ViewXml = "<View><Where><Eq><FieldRef Name='ry3a' /><Value Type='User'>SPM</Value></Eq></Where></View>";
@@ -285,6 +374,7 @@ namespace SPPipAPi.Controllers
                 FieldUserValue fuvCurassigned_to = null;
                 FieldUserValue fuvEditor = null;
                 FieldUserValue fuvAuthor = null;
+                 
                 if (targetListItem["currentAssignee"] != null)
                     fuvCurassigned_to = (FieldUserValue)targetListItem["currentAssignee"];
 
@@ -325,13 +415,61 @@ namespace SPPipAPi.Controllers
 
         }
 
-
         // below for workflow task assign and reject and others tagas 
         [Route("api/Pipflow/spsetTaskItemByID")]
 
         [HttpGet, HttpPost]
+        public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "")
+        {
+            // prepare site connection
+            ClientContext clientContext = new ClientContext(pathValue);
+            clientContext.Credentials = new NetworkCredential("spm", "pip@123");
+
+            try
+            {
+                //Get the list items from list
+                SP.List oList = clientContext.Web.Lists.GetByTitle("Workflow Tasks");
+
+                SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
+                User createuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(createdby));
+                User assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(AssignedTo));
+                clientContext.Load(createuser);
+                clientContext.ExecuteQuery();
+                //list2["AssignedTo"] = @"it1";
+                //list2["Completed"] = true;
+                FieldUserValue userValue = new FieldUserValue();
+                userValue.LookupId = createuser.Id;
+                if (AssignedTo != "")
+                {
+                    list2["approveduser"] = assignuser;
+                    list2["AssignedTo"] = createuser;
+
+
+                }
+                list2["PercentComplete"] = 1;
+                list2["Status"] = status;
+                list2["TaskOutcome"] = status;
+                list2["comments"] = Comments;
+                list2["event"] = assignevent;
+                // list2["Status"] = "Rejected";
+                // list2["TaskOutcome"] = "Rejected";
+                list2.Update();
+                clientContext.ExecuteQuery();
+            }
+            catch (Exception ex)
+            {
+
+                return getErrormessage(ex.Message);
+            }
+            return getSuccessmessage("Success");
+
+        }
+        // below for workflow task assign and reject and others tagas 
+        [Route("api/Pipflow/spsetTaskItemByID1")]
+
+        [HttpGet, HttpPost]
        
-        public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "")
+        public HttpResponseMessage spsetTaskItemByID1(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "")
         {
             // prepare site connection
             ClientContext clientContext = new ClientContext(strSiteURL);
@@ -419,107 +557,117 @@ namespace SPPipAPi.Controllers
 
         }
 
-        [Route("api/Pipflow/spgetTaskDetailsByuser")]
 
+        [Route("api/Pipflow/spgetWFEventDetailsByUser")]
         [HttpGet, HttpPost]
-        public HttpResponseMessage spgetTaskDetailsByuser(string Listname, string ListitemId)
+        public HttpResponseMessage spgetWFEventDetailsByUser(string Listname, string Eventuser = null)
         {
-
             // prepare site connection
             try
             {
                 // global parameters
+                Eventuser = Eventuser == null ? "" : Eventuser;
 
                 CamlQuery camlQuery = new CamlQuery();
-                camlQuery.ViewXml = "<Where><Eq><FieldRef Name='Author' LookupId='True' /><Value Type='User'>123</Value></Eq></Where>";
-                //<View><RowLimit>1000</RowLimit></View>
+                //camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
+                camlQuery.ViewXml = string.Format("<View><Where><Eq><FieldRef Name='AssignedTo' LookupId='TRUE'  /><Value Type='Text'>{0}</Value></Eq></Where></View>", Eventuser);
+                // camlQuery.ViewXml = "<View><Where><Eq><FieldRef Name='AssignedTo' /><Value Type='User'>" + Taskuser + "</Value></Eq></Where></View>";
+                //camlQuery.ViewXml = "<Where><And><Or><Membership Type='CurrentUserGroups'><FieldRef Name='AssignedTo' /></Membership><Eq><FieldRef Name='AssignedTo'  LookupId='TRUE' /><Value Type='Lookup'>27</Value></Eq></Or><Neq><FieldRef Name='Status' /><Value Type='Text'>Completed</Value></Neq></And></Where>";
+
+                //camlQuery. = "<Where><Or><Eq><FieldRef Name='AssignedTo' LookupId='TRUE'/><Value Type='Integer'><UserID /></Value></Eq><Membership Type='CurrentUserGroups'><FieldRef Name='AssignedTo'/></Membership></Or></Where>";
                 // prepare site connection
                 ClientContext clientContext = new ClientContext(strSiteURL);
-                clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
+                clientContext.Credentials = new NetworkCredential("spm", "pip@123");
 
 
                 Web web = clientContext.Web;
                 clientContext.Load(web);
+                List list = web.Lists.GetByTitle("pipdept");
 
-
-                List list = web.Lists.GetByTitle("Workflow Tasks");
-                ListItem targetListItem = list.GetItemById(ListitemId);
-                //clientContext.ExecuteQuery();
-
-                // Console.WriteLine("List ID::  " + list.Id);
-                clientContext.Load(targetListItem, item => item["Title"],
-                         item => item["Title"],
-                        item => item["TaskOutcome"],
-                        item => item["RelatedItems"],
-                        item => item["Status"],
-                        item => item["AssignedTo"],
-                        item => item["Editor"],
-                        item => item["Author"]);
                 clientContext.ExecuteQuery();
 
-                List<pipflow> respmsg = new List<pipflow>();
-                // create and cast the FieldUserValue from the value
-                FieldUserValue fuvAssignedTo = null;
-                FieldUserValue fuvEditor = null;
-                FieldUserValue fuvAuthor = null;
-                if (targetListItem["AssignedTo"] != null)
-                    foreach (FieldUserValue userValue in targetListItem["AssignedTo"] as FieldUserValue[])
-                    {
-                        //string test = userValue.LookupId;
-                        fuvAssignedTo = userValue;
-                    }
 
-                if (targetListItem["Editor"] != null)
-                    fuvEditor = (FieldUserValue)targetListItem["Editor"];
-                if (targetListItem["Author"] != null)
-                    fuvAuthor = (FieldUserValue)targetListItem["Author"];
+                ListItemCollection olists = list.GetItems(camlQuery);
+                // Console.WriteLine("List ID::  " + list.Id);
+                clientContext.Load(olists,
+                     items => items.Include(
 
-                string RelItem = "";
+                        item => item.Id,
+                        item => item["Title"],
+                        item => item["arole"],
+                         item => item["rrole"],
+                          item => item["event"]
+                      ));
+                clientContext.ExecuteQuery();
+                List<pipflowevents> respmsg = new List<pipflowevents>();
 
-                if (targetListItem["RelatedItems"].ToString() != "")
+                foreach (ListItem oListItem in olists)
                 {
+                    // create and cast the FieldUserValue from the value
+                    /*   FieldUserValue fuvAssignedTo = null;
+                     FieldUserValue fuvEditor = null;
+                     FieldUserValue fuvAuthor = null;
+                     if (oListItem["assignee"] != null)
+                           foreach (FieldUserValue userValue in oListItem["assignee"] as FieldUserValue[])
+                           {
+                               //string test = userValue.LookupId;
+                               fuvAssignedTo = userValue;
+                           }*/
 
-                    List<RelatedItemFieldValue> obj = JsonConvert.DeserializeObject<List<RelatedItemFieldValue>>(targetListItem["RelatedItems"].ToString());
-                    if (obj != null)
-                        RelItem = obj[0].ItemId.ToString();
+                    // assigned to for listing the data
+
+                    /*if (oListItem["assignee"] != null)
+                        fuvAssignedTo = (FieldUserValue)oListItem["assignee"];
+                    if (oListItem["Title"] != null && Eventuser != "")
+                        if (fuvAssignedTo.LookupValue.ToLower() != Eventuser.ToLower()) continue;
+                 
+                    if (oListItem["approver"] != null)
+                        fuvEditor = (FieldUserValue)oListItem["approver"];
+                    if (oListItem["ekfw"] != null)
+                        fuvAuthor = (FieldUserValue)oListItem["ekfw"];
+                    */
+                    if (oListItem["Title"] != null && Eventuser != "")
+                        if (oListItem["Title"].ToString().ToLower() != Eventuser.ToLower()) continue;
+
+                    respmsg.Add(new pipflowevents
+                    {
+                        id = oListItem.Id.ToString(),
+                        title = (oListItem["Title"] != null) ? oListItem["Title"].ToString() : "",
+                        arole = (oListItem["arole"] != null) ? oListItem["arole"].ToString() : "",
+                        rrole = (oListItem["rrole"] != null) ? oListItem["rrole"].ToString() : "",
+                        flowevent = (oListItem["event"] != null) ? oListItem["event"].ToString() : ""
+                        /*,
+                        flowevent = (oListItem["event"] != null) ? oListItem["event"].ToString() : "",
+                        assigned_to = (oListItem["assignee"] != null) ? fuvAssignedTo.LookupValue : "",
+                        assigned_to_id = (oListItem["assignee"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
+                        approved_to = (oListItem["approver"] != null) ? fuvEditor.LookupValue : "",
+                        approved_to_id = (oListItem["approver"] != null) ? fuvEditor.LookupId.ToString() : "",
+                        rejected_to = (oListItem["ekfw"] != null) ? fuvAuthor.LookupValue : "",
+                        rejected_to_id = (oListItem["ekfw"] != null) ? fuvAuthor.LookupId.ToString() : ""*/
+
+                    });
+
+
                 }
 
-                respmsg.Add(new pipflow
-                {
-
-                    //id = (targetListItem.Id != null) ? targetListItem.Id.ToString() : "",
-                    title = (targetListItem["Title"] != null) ? targetListItem["Title"].ToString() : "",
-                    taskoutcome = (targetListItem["TaskOutcome"] != null) ? targetListItem["TaskOutcome"].ToString() : "",
-                    RelatedItems = (targetListItem["RelatedItems"] != null) ? RelItem : "",
-                    status = (targetListItem["Status"] != null) ? targetListItem["Status"].ToString() : "",
-                    assigned_to = (targetListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupValue : "",
-                    assigned_to_id = (targetListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                    Modified_By = (targetListItem["Editor"] != null) ? fuvEditor.LookupValue : "",
-                    Modified_By_id = (targetListItem["Editor"] != null) ? fuvEditor.LookupId.ToString() : "",
-                    Created_By = (targetListItem["Author"] != null) ? fuvAuthor.LookupValue : "",
-                    Created_By_id = (targetListItem["Author"] != null) ? fuvAuthor.LookupId.ToString() : ""
-
-                });
                 return getHttpResponseMessage(JsonConvert.SerializeObject(respmsg));
-
-
-
-
             }
             catch (Exception ex)
             {
                 return getErrormessage(ex.Message);
             }
 
-        }
 
+        }
+        
         [Route("api/Pipflow/spgetTaskDetails")]
         [HttpGet, HttpPost]
-        public HttpResponseMessage spgetTaskDetails(string Listname, string Taskuser = null, string ReleatedItems = null)
+        public HttpResponseMessage spgetTaskDetails(string Listname, string Taskuser = null, string ReleatedItems = null,string status="")
         {
             // prepare site connection
             try
             {
+                if (status == null) status = "";
                 // global parameters
                 Taskuser = Taskuser == null ? "" : Taskuser;
                 ReleatedItems = ReleatedItems == null ? "" : "," + ReleatedItems + ",";
@@ -598,6 +746,7 @@ namespace SPPipAPi.Controllers
                     // related item to for listing the data filtering
                     if (ReleatedItems != "" && ReleatedItems.Contains("," + RelItem + ",") != true)
                         continue;
+                    if(status!="" && oListItem["Status"].ToString().ToLower() != status.ToLower()) continue;
                     respmsg.Add(new pipflow
                     {
                         id = oListItem.Id.ToString(),
@@ -627,130 +776,142 @@ namespace SPPipAPi.Controllers
 
         }
 
-        [Route("api/Pipflow/spgetWFEventDetailsByUser")]
-        [HttpGet, HttpPost]
-        public HttpResponseMessage spgetWFEventDetailsByUser(string Listname, string Eventuser = null)
-        {
-            // prepare site connection
-            try
-            {
-                // global parameters
-                Eventuser = Eventuser == null ? "" : Eventuser;
-
-                CamlQuery camlQuery = new CamlQuery();
-                //camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
-                camlQuery.ViewXml = string.Format("<View><Where><Eq><FieldRef Name='AssignedTo' LookupId='TRUE'  /><Value Type='Text'>{0}</Value></Eq></Where></View>", Eventuser);
-                // camlQuery.ViewXml = "<View><Where><Eq><FieldRef Name='AssignedTo' /><Value Type='User'>" + Taskuser + "</Value></Eq></Where></View>";
-                //camlQuery.ViewXml = "<Where><And><Or><Membership Type='CurrentUserGroups'><FieldRef Name='AssignedTo' /></Membership><Eq><FieldRef Name='AssignedTo'  LookupId='TRUE' /><Value Type='Lookup'>27</Value></Eq></Or><Neq><FieldRef Name='Status' /><Value Type='Text'>Completed</Value></Neq></And></Where>";
-
-                //camlQuery. = "<Where><Or><Eq><FieldRef Name='AssignedTo' LookupId='TRUE'/><Value Type='Integer'><UserID /></Value></Eq><Membership Type='CurrentUserGroups'><FieldRef Name='AssignedTo'/></Membership></Or></Where>";
-                // prepare site connection
-                ClientContext clientContext = new ClientContext("http://spnarasimha/sites/narasimha/pip");
-                clientContext.Credentials = new NetworkCredential("spm", "pip@123");
-
-
-                Web web = clientContext.Web;
-                clientContext.Load(web);
-                List list = web.Lists.GetByTitle("pipdept");
-
-                clientContext.ExecuteQuery();
-
-
-                ListItemCollection olists = list.GetItems(camlQuery);
-                // Console.WriteLine("List ID::  " + list.Id);
-                clientContext.Load(olists,
-                     items => items.Include(
-
-                        item => item.Id,
-                        item => item["Title"],
-                        item => item["assignee"],
-                         item => item["approver"],
-                        item => item["ekfw"],
-                        item => item["event"]));
-                clientContext.ExecuteQuery();
-                List<pipflowevents> respmsg = new List<pipflowevents>();
-
-                foreach (ListItem oListItem in olists)
-                {
-                    // create and cast the FieldUserValue from the value
-                    FieldUserValue fuvAssignedTo = null;
-                    FieldUserValue fuvEditor = null;
-                    FieldUserValue fuvAuthor = null;
-                    /*  if (oListItem["assignee"] != null)
-                          foreach (FieldUserValue userValue in oListItem["assignee"] as FieldUserValue[])
-                          {
-                              //string test = userValue.LookupId;
-                              fuvAssignedTo = userValue;
-                          }*/
-
-                    // assigned to for listing the data
-
-                    if (oListItem["assignee"] != null)
-                        fuvAssignedTo = (FieldUserValue)oListItem["assignee"];
-                    if (oListItem["assignee"] != null && Eventuser != "")
-                        if (fuvAssignedTo.LookupValue.ToLower() != Eventuser.ToLower()) continue;
-
-                    if (oListItem["approver"] != null)
-                        fuvEditor = (FieldUserValue)oListItem["approver"];
-                    if (oListItem["ekfw"] != null)
-                        fuvAuthor = (FieldUserValue)oListItem["ekfw"];
-
-
-
-                    respmsg.Add(new pipflowevents
-                    {
-                        id = oListItem.Id.ToString(),
-                        title = (oListItem["Title"] != null) ? oListItem["Title"].ToString() : "",
-                        flowevent = (oListItem["event"] != null) ? oListItem["event"].ToString() : "",
-                        assigned_to = (oListItem["assignee"] != null) ? fuvAssignedTo.LookupValue : "",
-                        assigned_to_id = (oListItem["assignee"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                        approved_to = (oListItem["approver"] != null) ? fuvEditor.LookupValue : "",
-                        approved_to_id = (oListItem["approver"] != null) ? fuvEditor.LookupId.ToString() : "",
-                        rejected_to = (oListItem["ekfw"] != null) ? fuvAuthor.LookupValue : "",
-                        rejected_to_id = (oListItem["ekfw"] != null) ? fuvAuthor.LookupId.ToString() : ""
-
-                    });
-
-
-                }
-
-                return getHttpResponseMessage(JsonConvert.SerializeObject(respmsg));
-            }
-            catch (Exception ex)
-            {
-                return getErrormessage(ex.Message);
-            }
-
-
-        }
+     
         // start user active directory calls to servers
-        [System.Web.Http.Route("api/AduVerify/ADAddUser")]
+        [System.Web.Http.Route("api/Pipflow/ADAddUser")]
         [System.Web.Http.HttpPost]
         public HttpResponseMessage ADAddUser(CreateUser model)
         {
-            return getErrormessage("success");
+           
+                string response = string.Empty;
+            response = ClsGeneral.DoWebreqeust(strADUserURL + "/ADAddUser", JsonConvert.SerializeObject(model));
+            string fullURL = HttpUtility.UrlEncode(strADUserURL + "/ADAddUser", Encoding.UTF8);// strADUserURL + "/ADAddUser";
+               
+            var httpWebRequest = (HttpWebRequest)WebRequest.Create(fullURL);
+                httpWebRequest.ContentType = "application/json";
+                httpWebRequest.Method = "POST";
+
+                using (var streamWriter = new StreamWriter(httpWebRequest.GetRequestStream()))
+                {
+                  
+ 
+                    streamWriter.Write(JsonConvert.SerializeObject(model));
+                    streamWriter.Flush();
+                    streamWriter.Close();
+
+                    var httpResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+
+                    using (var streamReader = new StreamReader(httpResponse.GetResponseStream()))
+                    {
+                        response = streamReader.ReadToEnd();
+                    }
+                }
+
+                return getHttpResponseMessage(response); 
+           
+            using (var client = new HttpClient())
+            {
+                var res = client.PostAsync(strADUserURL + "/ADAddUser",
+                  new StringContent(JsonConvert.SerializeObject(model),
+                    Encoding.UTF8, "application/json")
+                );
+
+                try
+                {
+                    res.Result.EnsureSuccessStatusCode();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.ToString());
+                }
+                return getHttpResponseMessage(res.ToString());
+                
+            }
+
+            try
+
+            {
+                using (var client = new HttpClient())
+                {
+                   
+                    client.BaseAddress = new Uri("http://localhost:8081");
+                    // var response1 = client.PostAsJsonAsync("/api/ADUVerify/ADAddUser", model).Result;\
+                    var response1 = client.PostAsJsonAsync("/api/ADUVerify/ADAddUser",  new StringContent(JsonConvert.SerializeObject(model).ToString(), Encoding.UTF8, "application/json")).Result;
+                  
+                    if (response1.IsSuccessStatusCode)
+                    {
+                        Console.Write("Success");
+                    }
+                    else
+                        Console.Write("Error");
+                }
+               
+                using (WebClient client = new WebClient())
+                {
+
+                   
+
+                    var dataString = JsonConvert.SerializeObject(model);
+                    var content = new StringContent(dataString, Encoding.UTF8, "application/json");
+                   // var result = (await client.Po(strADUserURL + "/ADAddUser",content)).Result;
+
+                   
+                   // wc.Headers["Content-Type"] = "application/x-www-form-urlencoded";
+                    client.Headers.Add(HttpRequestHeader.ContentType, "application/x-www-form-urlencoded");
+                     response = client.UploadString(new Uri(strADUserURL + "/ADAddUser"), "POST", dataString);
+                    return getHttpResponseMessage(response);
+                }
+            }
+            catch(Exception ex) {
+                return getErrormessage("faile:" + ex.Message);
+            }
+            
         }
-        [System.Web.Http.Route("api/AduVerify/getADUsers")]
+        [System.Web.Http.Route("api/Pipflow/getADUsers")]
         [System.Web.Http.HttpGet, System.Web.Http.HttpPost]
         public HttpResponseMessage getADUsers(string OUNAMES)
         {
-
+            //List<CreateUser> userlist;
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri(strADUserURL);
                 client.DefaultRequestHeaders.Accept.Clear();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-
-                // New code:
-                HttpResponseMessage response =  client.GetAsync("api/ADUVerify/getADUsers?oustates=" + OUNAMES).Result ;
-                if (response.IsSuccessStatusCode)
+                if (ConfigurationManager.AppSettings["AD_USER_URL"] != null)
                 {
-                    CreateUser Users = null;// response.Content.ReadAsAsync<List<CreateUser>>();
-                   
+                    string strADUserApiURL = ConfigurationManager.AppSettings["AD_USER_URL"].ToString();
+                    // New code:
+                    strADUserApiURL = strADUserApiURL + "/getADUsers?OUNAMES=" + OUNAMES;
+                    HttpResponseMessage response = client.GetAsync(strADUserApiURL).Result;
+                    return response;
+                    //if (response.IsSuccessStatusCode)
+                    //{
+                    //    //CreateUser Users = null;
+                    //  var userlist = response.Content.ReadAsAsync<List<CreateUser>>();
+                    //    return getHttpResponseMessage(JsonConvert.SerializeObject(userlist));
+                    //}
                 }
             }
+            
             return getErrormessage("success");
         }
+
+        //static async Task<CreateUser> GetProductAsync(string path)
+        //{
+        //    CreateUser createUser = null;
+        //    HttpResponseMessage response = await client.GetAsync(path);
+        //    if (response.IsSuccessStatusCode)
+        //    {
+        //        product = await response.Content.ReadAsAsync<Product>();
+        //    }
+        //    return product;
+        //}
+
+
+
+
+
+
         /*
         private  HttpResponseMessage  DoWebRequest(string endpoint, string reqtype,object obj)
         {
@@ -789,11 +950,48 @@ namespace SPPipAPi.Controllers
                 }
             }
         }*/
-        [System.Web.Http.Route("api/AduVerify/ADUpdateUser")]
+        [System.Web.Http.Route("api/Pipflow/ADUpdateUser")]
         [System.Web.Http.HttpPost]
-        public HttpResponseMessage ADUpdateUser(CreateUser model)
+        public HttpResponseMessage ADUpdateUser(CreateUser createUser)
         {
-            return getErrormessage("success");
+            
+            using (var client = new HttpClient())
+            {
+                //    client.BaseAddress = new Uri(strADUserURL);
+                //    client.DefaultRequestHeaders.Accept.Clear();
+                //    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                //    if (ConfigurationManager.AppSettings["AD_USER_URL"] != null)
+                //    {
+                //        string strADUserApiURL = ConfigurationManager.AppSettings["AD_USER_URL"].ToString();
+                //        // New code:
+                //        strADUserApiURL = strADUserApiURL + "/ADUpdateUser";
+                //        HttpResponseMessage response = client.GetAsync(strADUserApiURL).Result;
+                //        return response;
+                //        //if (response.IsSuccessStatusCode)
+                //        //{
+                //        //    //CreateUser Users = null;
+                //        //  var userlist = response.Content.ReadAsAsync<List<CreateUser>>();
+                //        //    return getHttpResponseMessage(JsonConvert.SerializeObject(userlist));
+                //        //}
+                //    }
+                //}
+
+                if (ConfigurationManager.AppSettings["AD_USER_URL"] != null)
+                {
+                    string strADUserApiURL = ConfigurationManager.AppSettings["AD_USER_URL"].ToString();
+                    // New code:
+                    strADUserApiURL = strADUserApiURL + "/ADUpdateUser?"+ "{createUser}";
+
+                    HttpResponseMessage response = client.PutAsJsonAsync(strADUserApiURL,createUser).Result;
+                    response.EnsureSuccessStatusCode();
+
+                    // Deserialize the updated product from the response body.
+                   var product = response.Content.ReadAsAsync<CreateUser>();
+                     return getHttpResponseMessage(JsonConvert.SerializeObject(product));
+                    
+                }
+            }
+            return getHttpResponseMessage("success");
         }
         // ENd user active directory calls to servers
         private SecureString getSecuredString(string strPWD)

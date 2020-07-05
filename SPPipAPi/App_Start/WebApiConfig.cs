@@ -10,7 +10,7 @@ namespace SPPipAPi
         public static void Register(HttpConfiguration config)
         {
             // Web API configuration and services
-
+              config.EnableCors();
             // Web API routes
             config.MapHttpAttributeRoutes();
 
@@ -22,6 +22,7 @@ namespace SPPipAPi
 
             // WebApi Configuration to hook up formatters and message handlers
             RegisterApis(GlobalConfiguration.Configuration);
+            
         }
 
         public static void RegisterApis(HttpConfiguration config)
