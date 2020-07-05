@@ -23,13 +23,14 @@ https://<IP>/api/Pipflow/spcheckuser?uname=<spm>&pwd=<pip@123>
 2.
 # Get the sharepont list details based on list name
 
-https://<IP>/api/Pipflow/spgetListByName?Listname=<pipflow1>
+https://<IP>/api/Pipflow/spgetListByName?Listname={Listname}&status={status}
   
   Method type : GET or POST
   
   Request parameters:
   
              Listname : Name of the list 
+             status : FMR list status need to be send
              
   Response output:
   
@@ -174,12 +175,12 @@ https://<IP>/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
              
   Response output:
   
-              success: [{"id":"4","title":"SNC","arole":"PDSPOC","rrole":"SNC"},{"id":"18","title":"SNC","arole":"SND","rrole":"SNC"}]
+              success: [{"id":"1","title":"SPM","arole":"MD","rrole":"SPM","flowevent":""}]
               fail:  Error message
 Eg link: 
 http://localhost:56643/api/Pipflow/spgetuserinfo?uname=spm&pwd=pip@123
 
-live: http://40.70.16.29:8080/api/Pipflow/spgetWFEventDetailsByUser?listname&eventuser=snc
+live: http://52.172.200.35:2020/sppipapidev/api/Pipflow/spgetWFEventDetailsByUser?Listname=&Eventuser=spm
 # end 
 10.
 # FMR list update for sataus and remarks api post
