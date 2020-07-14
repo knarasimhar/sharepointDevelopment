@@ -17,12 +17,13 @@ namespace SPPipAPi.Models
         {
             WebRequest request = WebRequest.Create(url + data);
 
-            request.ContentType = "Plain/text; charset=UTF-8";
+           // request.ContentType = "Plain/text; charset=UTF-8";
 
             // If required by the server, set the credentials.
             request.Credentials = CredentialCache.DefaultCredentials;
-
-
+            //request.ContentType = "application/json; charset=UTF-8";
+            request.ContentType = "application/json; odata=nometadata";
+            
             WebResponse response = request.GetResponse();
 
             // Display the status.
