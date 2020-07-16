@@ -38,7 +38,11 @@ namespace SPPipAPi.Models
         public string areviewuser_to_id { get; set; }
         public string areviewuser_to { get; set; }
         public string currenttaskid { get; set; }
-        
+
+        public string tasktype { get; set; }
+
+        public string ParentID { get; set; }
+
 
 
     }
