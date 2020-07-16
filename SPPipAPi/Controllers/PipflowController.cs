@@ -629,7 +629,12 @@ namespace SPPipAPi.Controllers
                     }
 
                     oItem["AssignedTo"] = AreveiweruserValueCollection;
-                    oItem["Title"] = "create sub task";
+                    if(TASKTYPE=="2")
+                    oItem["Title"] = "Additional Review";
+                    else if (TASKTYPE == "3")
+                        oItem["Title"] = "ROP";
+                    else
+                        oItem["Title"] = "sub task";
                     oItem["ParentID"] = lookupValueCollection; // set chidl item ParentID field  
                     oItem["tasktype"] = TASKTYPE;
                     oItem.Update();
