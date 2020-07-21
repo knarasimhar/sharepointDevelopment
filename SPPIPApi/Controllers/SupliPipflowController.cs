@@ -26,14 +26,17 @@ using System.Threading;
 namespace SPPipAPi.Controllers
 {
     [EnableCors(origins: "http://sharepoint2:8081,http://localhost:44349", headers: "*", methods: "*")]
-    public class PipflowController : ApiController
+    public class SupliPipflowController : ApiController
     {
-        // GET api/values/5
         String strSiteURL = "http://sharepoint2/sites/teamsiteex/PipFlowSite", strUSER = "spuser2", strPWD = "User@123#", strADUserURL = "", SitepathValue = "";
         string SITE_API_URL = "";
         string strDomainName = ConfigurationManager.AppSettings["DomainName"].ToString();
         Boolean isWait = false;
-        public PipflowController()
+        string cPipflowListName = "Spipflow1";
+        string cPipdeptListName = "Spipdept";
+        string cWfListName = "WFSstatus Tasks";
+
+        public SupliPipflowController()
         {
             if (ConfigurationManager.AppSettings["SITE_URL"] != null)
                 strSiteURL = ConfigurationManager.AppSettings["SITE_URL"].ToString();
@@ -50,7 +53,7 @@ namespace SPPipAPi.Controllers
             //strPWD = HttpUtility.UrlEncode(strPWD);
         }
 
-        [Route("api/Pipflow/spgetuserinfo")]
+        [Route("api/SupliPipflow/spgetuserinfo")]
         // [ActionName("spcheckuser")]
         [HttpGet]
 
@@ -87,7 +90,7 @@ namespace SPPipAPi.Controllers
 
         }
 
-        //[System.Web.Http.Route("api/Pipflow/getADUser")]
+        //[System.Web.Http.Route("api/SupliPipflow/getADUser")]
 
         //[System.Web.Http.HttpGet, System.Web.Http.HttpPost]
 
@@ -117,7 +120,7 @@ namespace SPPipAPi.Controllers
 
 
 
-        [Route("api/Pipflow/spcheckuser")]
+        [Route("api/SupliPipflow/spcheckuser")]
         // [ActionName("spcheckuser")]
         [HttpGet]
         public HttpResponseMessage spcheckuser(string uname, string pwd)
@@ -139,7 +142,7 @@ namespace SPPipAPi.Controllers
             return getSuccessmessage("False");
         }
 
-        [Route("api/Pipflow/spgetListByName")]
+        [Route("api/SupliPipflow/spgetListByName")]
 
         [HttpGet, HttpPost]
         public HttpResponseMessage spgetListByName(string Listname, string status = "", string ListitemId = "", string FY = "", string fmrtype = "", string stateid = "")
@@ -173,7 +176,7 @@ namespace SPPipAPi.Controllers
                 clientContext.Load(user);
                 clientContext.ExecuteQuery();
 
-                List list = web.Lists.GetByTitle(Listname);
+                List list = web.Lists.GetByTitle(cPipflowListName);
 
                 Console.WriteLine("Client context::  " + clientContext.ToString());
                 ListItemCollection olists;
@@ -301,7 +304,7 @@ namespace SPPipAPi.Controllers
         }
 
 
-        [Route("api/Pipflow/spsetFMR")]
+        [Route("api/SupliPipflow/spsetFMR")]
 
         [HttpGet, HttpPost]
         public HttpResponseMessage spsetFMR(string fmrid, string remarks, string Listname, string AssignedTo = "", string FY = "", string stateid = "", string fmrtype = "")
@@ -321,7 +324,7 @@ namespace SPPipAPi.Controllers
 
 
 
-                List oList = clientContext.Web.Lists.GetByTitle("pipflow1");
+                List oList = clientContext.Web.Lists.GetByTitle(cPipflowListName);
 
                 ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
                 ListItem oListItem = oList.AddItem(itemCreateInfo);
@@ -346,7 +349,7 @@ namespace SPPipAPi.Controllers
                 //ListItem targetListItem = oList.(ListitemId);
 
                 /*   isWait = true;
-                   getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/Pipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", "SPM", fmrid));
+                   getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/SupliPipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", "SPM", fmrid));
                    */
             }
             catch (Exception ex)
@@ -357,7 +360,7 @@ namespace SPPipAPi.Controllers
             return getSuccessmessage("success");
         }
 
-        [Route("api/Pipflow/spupdateFMR")]
+        [Route("api/SupliPipflow/spupdateFMR")]
         [HttpGet, HttpPost]
         public HttpResponseMessage spupdateFMR(string Listname, string fmrSPid, string remarks, string status)
         {
@@ -380,7 +383,7 @@ namespace SPPipAPi.Controllers
                 if (Listname != "")
                     oList = clientContext.Web.Lists.GetByTitle(Listname);
                 else
-                    oList = clientContext.Web.Lists.GetByTitle("pipflow1");
+                    oList = clientContext.Web.Lists.GetByTitle(cPipflowListName);
 
                 ListItem targetListItem = oList.GetItemById(fmrSPid);
 
@@ -407,7 +410,7 @@ namespace SPPipAPi.Controllers
         }
 
 
-        [Route("api/Pipflow/spgetListItemByID")]
+        [Route("api/SupliPipflow/spgetListItemByID")]
 
         [HttpGet, HttpPost]
         public HttpResponseMessage spgetListItemByID(string Listname, string ListitemId)
@@ -428,7 +431,7 @@ namespace SPPipAPi.Controllers
 
                 Web web = clientContext.Web;
                 clientContext.Load(web);
-                List list = web.Lists.GetByTitle(Listname);
+                List list = web.Lists.GetByTitle(cPipflowListName);
                 ListItem targetListItem = list.GetItemById(ListitemId);
                 //clientContext.ExecuteQuery();
 
@@ -490,7 +493,7 @@ namespace SPPipAPi.Controllers
         }
         // TASKTYPE 1 FOR NORMAL,2 FOR ADD REVIEW,3 FOR ROP
         // below for workflow task assign and reject and others tagas 
-        [Route("api/Pipflow/spsetTaskItemByID")]
+        [Route("api/SupliPipflow/spsetTaskItemByID")]
 
         [HttpGet, HttpPost]
         public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "", string areviewuserTo = "", string SPFmrID = "", string TASKTYPE = "")
@@ -500,7 +503,6 @@ namespace SPPipAPi.Controllers
             clientContext.Credentials = new NetworkCredential("spm", "pip@123");
             if (AssignedTo == null) AssignedTo = "";
             if (TASKTYPE == null) TASKTYPE = "1";
-            
             try
             {
 
@@ -525,7 +527,7 @@ namespace SPPipAPi.Controllers
 
 
                 //Get the list items from list
-                SP.List oList = clientContext.Web.Lists.GetByTitle("Workflow Tasks");
+                SP.List oList = clientContext.Web.Lists.GetByTitle(cWfListName);
                 SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
                 User createuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(createdby));
                 User assignuser = null;
@@ -594,7 +596,7 @@ namespace SPPipAPi.Controllers
                         list2["TaskOutcome"] = status;
                         list2["comments"] = Comments;
                         list2["event"] = assignevent;
-                        list2["tasktype"] = TASKTYPE;
+                        list2["tasktype"] = 1;
 
                     }
                     else
@@ -605,7 +607,7 @@ namespace SPPipAPi.Controllers
                         list2["TaskOutcome"] = status;
                         list2["comments"] = Comments;
                         list2["event"] = assignevent;
-                        list2["tasktype"] = TASKTYPE;
+                        list2["tasktype"] = 1;
                         //list2["comments"] = Comments;
                     }
                     // list2["Status"] = "Rejected";
@@ -613,16 +615,9 @@ namespace SPPipAPi.Controllers
                     list2.Update();
                     clientContext.ExecuteQuery();
                 }
-                else
-                {
-                    list2["PercentComplete"] = percentComplete;
-                    list2["Status"] = status;
-                    list2["TaskOutcome"] = status;
-                    list2["comments"] = Comments;
-                    // list2["event"] = assignevent;
-                    list2.Update();
-                    clientContext.ExecuteQuery();
-                }
+               
+
+
                 if (areviewuserTo != null && areviewuserTo != "" && (TASKTYPE == "2" || TASKTYPE == "3"))
                 {
                     ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
@@ -673,12 +668,12 @@ namespace SPPipAPi.Controllers
 
 
                 // updated latest task id to FMR list for viewing
-                //http://52.172.200.35:2020/sppipapidevtesting/api/Pipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
+                //http://52.172.200.35:2020/sppipapidevtesting/api/SupliPipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
 
                 if (SPFmrID != null && SPFmrID != "" && AssignedTo != null && AssignedTo != "")
                 {
                     isWait = true;
-                    getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/Pipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", AssignedTo, SPFmrID));
+                    getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/SupliPipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", AssignedTo, SPFmrID));
                 }
                 //end of the 
             }
@@ -694,7 +689,7 @@ namespace SPPipAPi.Controllers
         private void getLatestTaskIDByFMRNO(string _Url)
         {
 
-            //http://52.172.200.35:2020/sppipapidevtesting/api/Pipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
+            //http://52.172.200.35:2020/sppipapidevtesting/api/SupliPipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
             // http://sharepoint2/sites/teamsiteex/pipflowsitetesting/_api/web/lists/getbytitle('Workflow%20Tasks')/items?$top=1&$orderby=Id%20desc
             if (isWait)
                 Thread.Sleep(10000);
@@ -715,13 +710,13 @@ namespace SPPipAPi.Controllers
             List<pipflow> pipfs = JsonConvert.DeserializeObject<List<pipflow>>(strResp);
             foreach (pipflow pipf in pipfs)
             {
-                spsetAddorupdteItemByID("", "pipflow1", "", "", pipf.RelatedItems, "", pipf.id); break;
+                spsetAddorupdteItemByID("", cPipflowListName, "", "", pipf.RelatedItems, "", pipf.id); break;
             }
             return;
 
         }
         // below for workflow task assign and reject and others tagas 
-        [Route("api/Pipflow/spsetAddorupdteItemByID")]
+        [Route("api/SupliPipflow/spsetAddorupdteItemByID")]
         [HttpGet, HttpPost]
         public HttpResponseMessage spsetAddorupdteItemByID(string status, string Listname, string Comments, string createdby, string itemid, string keyvalue, string Taskid)
         {
@@ -732,7 +727,7 @@ namespace SPPipAPi.Controllers
             try
             {
                 //Get the list items from list
-                SP.List oList = clientContext.Web.Lists.GetByTitle(Listname);
+                SP.List oList = clientContext.Web.Lists.GetByTitle(cPipflowListName);
 
                 SP.ListItem list2 = oList.GetItemById(Int32.Parse(itemid));
                 //User user = clientContext.Web.EnsureUser(@"i:0#.w|saathispdt\" + HttpUtility.UrlDecode(createdby));
@@ -759,7 +754,7 @@ namespace SPPipAPi.Controllers
         }
 
 
-        [Route("api/Pipflow/spgetWFEventDetailsByUser")]
+        [Route("api/SupliPipflow/spgetWFEventDetailsByUser")]
         [HttpGet, HttpPost]
         public HttpResponseMessage spgetWFEventDetailsByUser(string Listname, string Eventuser = null)
         {
@@ -783,7 +778,7 @@ namespace SPPipAPi.Controllers
 
                 Web web = clientContext.Web;
                 clientContext.Load(web);
-                List list = web.Lists.GetByTitle("pipdept");
+                List list = web.Lists.GetByTitle(cPipdeptListName);
 
                 clientContext.ExecuteQuery();
 
@@ -943,7 +938,7 @@ namespace SPPipAPi.Controllers
             ds.Tables.Add(table);
             return ds;
         }
-        [Route("api/Pipflow/spgetTaskDetailsByuser")]
+        [Route("api/SupliPipflow/spgetTaskDetailsByuser")]
         [HttpGet, HttpPost]
         public HttpResponseMessage spgetTaskDetailsByuser(string Listname, string ListitemId, string Vfieldname = "")
         {
@@ -966,7 +961,7 @@ namespace SPPipAPi.Controllers
                 clientContext.Load(web);
 
 
-                List list = web.Lists.GetByTitle("Workflow Tasks");
+                List list = web.Lists.GetByTitle(cWfListName);
 
 
                 ListItem targetListItem = list.GetItemById(ListitemId);
@@ -1080,7 +1075,7 @@ namespace SPPipAPi.Controllers
 
         }
 
-        [Route("api/Pipflow/spgetTaskDetails")]
+        [Route("api/SupliPipflow/spgetTaskDetails")]
         [HttpGet, HttpPost]
         public HttpResponseMessage spgetTaskDetails(string Listname, string Taskuser = null, string ReleatedItems = null, string status = "", string TaskType = "")
         {
@@ -1109,7 +1104,7 @@ namespace SPPipAPi.Controllers
                 clientContext.Load(web);
                 //  var tasks;
                 // clientContext.Load(tasks, c => c.Where(t => t.Parent != null && t.Parent.Id == parentId));
-                List list = web.Lists.GetByTitle("Workflow Tasks");
+                List list = web.Lists.GetByTitle(cWfListName);
                 ListItemCollection olists = list.GetItems(camlQuery);
                 // Console.WriteLine("List ID::  " + list.Id);
                 clientContext.Load(olists,
@@ -1118,7 +1113,6 @@ namespace SPPipAPi.Controllers
                         item => item["Title"],
                         item => item["TaskOutcome"],
                          item => item["RelatedItems"],
-
                         item => item["Status"],
                         item => item["AssignedTo"],
                         item => item["approveduser"],
@@ -1238,7 +1232,7 @@ namespace SPPipAPi.Controllers
             clientContext.Load(web);
             //  var tasks;
             // clientContext.Load(tasks, c => c.Where(t => t.Parent != null && t.Parent.Id == parentId));
-            List list = web.Lists.GetByTitle("Workflow Tasks");
+            List list = web.Lists.GetByTitle(cWfListName);
             ListItemCollection olists = list.GetItems(camlQuery);
             // Console.WriteLine("List ID::  " + list.Id);
             clientContext.Load(olists,
@@ -1247,7 +1241,7 @@ namespace SPPipAPi.Controllers
                     item => item["Title"],
                     item => item["TaskOutcome"],
                      item => item["RelatedItems"],
-                     item => item["relateditem"],
+                    item => item["relateditem"],
                     item => item["Status"],
                     item => item["AssignedTo"],
                     item => item["approveduser"],
@@ -1392,7 +1386,7 @@ namespace SPPipAPi.Controllers
         //end 
 
 
-        [System.Web.Http.Route("api/Pipflow/ADAddUser")]
+        [System.Web.Http.Route("api/SupliPipflow/ADAddUser")]
         [System.Web.Http.HttpPost]
         public HttpResponseMessage ADAddUser(CreateUser model)
         {
@@ -1418,7 +1412,7 @@ namespace SPPipAPi.Controllers
 
 
         // start user active directory calls to servers
-        //[System.Web.Http.Route("api/Pipflow/ADAddUser")]
+        //[System.Web.Http.Route("api/SupliPipflow/ADAddUser")]
         //[System.Web.Http.HttpPost]
         //public HttpResponseMessage ADAddUser(CreateUser model)
         //{
@@ -1508,7 +1502,7 @@ namespace SPPipAPi.Controllers
         //    }
 
         //}
-        [System.Web.Http.Route("api/Pipflow/getADUsers")]
+        [System.Web.Http.Route("api/SupliPipflow/getADUsers")]
         [System.Web.Http.HttpGet, System.Web.Http.HttpPost]
         public HttpResponseMessage getADUsers(string OUNAMES)
         {
@@ -1591,7 +1585,7 @@ namespace SPPipAPi.Controllers
                 }
             }
         }*/
-        [System.Web.Http.Route("api/Pipflow/ADUpdateUser")]
+        [System.Web.Http.Route("api/SupliPipflow/ADUpdateUser")]
         [System.Web.Http.HttpPost]
         public HttpResponseMessage ADUpdateUser(CreateUser createUser)
         {
@@ -1640,7 +1634,7 @@ namespace SPPipAPi.Controllers
 
         }
 
-        [System.Web.Http.Route("api/Pipflow/BulkPushAPIS")]
+        [System.Web.Http.Route("api/SupliPipflow/BulkPushAPIS")]
         [System.Web.Http.HttpPost]
         public HttpResponseMessage BulkPushAPIS(List<BulkpushAPIS> models)
         {
@@ -1661,7 +1655,6 @@ namespace SPPipAPi.Controllers
                     ListItem oItem = oList.AddItem(oListItemCreationInformation);
                     oItem["Title"] = BulkAPI.Title;
                     oItem["pushurl"] = BulkAPI.url;
-                    oItem["callbackurl"] = BulkAPI.callbackurl;
                     oItem.Update();
                     //clientContext.Load(oItem);
                     clientContext.ExecuteQuery();
@@ -1676,19 +1669,8 @@ namespace SPPipAPi.Controllers
             return getSuccessmessage("Success");
         }
 
-        public string Get()
-        {
-            return "Welcome To Web API";
-        }
-        public List<string> Get(int Id)
-        {
-            return new List<string> {
-                "Data1",
-                "Data2"
-            };
-        }
+
 
 
     }
 }
-

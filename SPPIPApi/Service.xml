@@ -61,12 +61,3 @@
   <link rel="next" href="http://sharepoint2/sites/teamsiteex/pipflowsitetesting/_api/web/lists/getbytitle('Workflow%20Tasks')/items?%24skiptoken=Paged%3dTRUE%26p_ID%3d435&amp;%24top=1&amp;%24orderby=Id+desc" />
 </feed>
 
-<View Scope = "RecursiveAll">  <Query> <Where>
-      <Eq>
-        <FieldRefName = "ParentID" />
-        <ValueType = "Counter">
-          1</Value>
-      </Eq>
-    </Where>
-  </Query>
-</View>

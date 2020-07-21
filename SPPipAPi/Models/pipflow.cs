@@ -5,9 +5,45 @@ using System.Web;
 
 namespace SPPipAPi.Models
 {
+    public class fmrlist
+    {
+        public string id { get; set; }
+        public string title { get; set; }
+        public string status { get; set; }
+        public string remarks { get; set; }
+        public string taskoutcome { get; set; }
 
-   
-    public class pipflow
+        public string RelatedItems { get; set; }
+
+        public string Modified_By { get; set; }
+
+        public string Modified_By_id { get; set; }
+        public string Created_By { get; set; }
+
+        public string Created_By_id { get; set; }
+
+        public string assigned_to { get; set; }
+
+        public string assigned_to_id { get; set; }
+
+        public string approveduser_to_id { get; set; }
+        public string approveduser_to { get; set; }
+
+        public string areviewuser_to_id { get; set; }
+        public string areviewuser_to { get; set; }
+
+        public string currentassign_to_id { get; set; }
+        public string currentassign_to { get; set; }
+        public string currenttaskid { get; set; }
+
+        public string fy { get; set; }
+
+        public string fmrtype { get; set; }
+
+        public string stateid { get; set; }
+    }
+
+        public class pipflow
     {
         public string id { get; set; }
         public string title { get; set; }
@@ -37,10 +73,11 @@ namespace SPPipAPi.Models
 
         public string areviewuser_to_id { get; set; }
         public string areviewuser_to { get; set; }
-        public string currenttaskid { get; set; }
+      
 
         public string tasktype { get; set; }
 
+       
         public string ParentID { get; set; }
 
 
@@ -105,7 +142,8 @@ public class pipflowevents
         #region Properties
         public string Title { get; set; }
         public string url { get; set; }
-        
+
+        public string callbackurl { get; set; }
         #endregion
     }
     public class RelatedItemFieldValue
