@@ -691,8 +691,15 @@ namespace SPPipAPi.Controllers
 
             //http://52.172.200.35:2020/sppipapidevtesting/api/SupliPipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
             // http://sharepoint2/sites/teamsiteex/pipflowsitetesting/_api/web/lists/getbytitle('Workflow%20Tasks')/items?$top=1&$orderby=Id%20desc
+
             if (isWait)
-                Thread.Sleep(10000);
+            {
+                int i_Taskwaittime = 10000;
+                if (ConfigurationManager.AppSettings["TASK_WAIT_TIME"] != null)
+                    i_Taskwaittime = int.Parse(ConfigurationManager.AppSettings["TASK_WAIT_TIME"]);
+                Thread.Sleep(i_Taskwaittime);
+
+            }
             string strResp = ClsGeneral.DoWebGetRequest(_Url, "");
 
             /*  string[] strRespsplit1 = strResp.Split(new string[] { "<d:ID" },StringSplitOptions.None);

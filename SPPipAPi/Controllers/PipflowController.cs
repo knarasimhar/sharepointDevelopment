@@ -493,14 +493,16 @@ namespace SPPipAPi.Controllers
         [Route("api/Pipflow/spsetTaskItemByID")]
 
         [HttpGet, HttpPost]
-        public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "", string areviewuserTo = "", string SPFmrID = "", string TASKTYPE = "")
+        public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "", string areviewuserTo = "", string SPFmrID = "", string TASKTYPE = "", string callbackurl = "")
         {
             // prepare site connection
+            string strcallbackurl = callbackurl;
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential("spm", "pip@123");
             if (AssignedTo == null) AssignedTo = "";
+            if (percentComplete == null) percentComplete = "1";
             if (TASKTYPE == null) TASKTYPE = "1";
-            
+
             try
             {
 
@@ -531,6 +533,8 @@ namespace SPPipAPi.Controllers
                 User assignuser = null;
                 clientContext.Load(createuser);
                 int i = 0;
+
+                // if assignedTo is null its related to sub task only 
                 if (AssignedTo != "")
                 {
                     FieldUserValue[] userValueCollection = new FieldUserValue[AssignedTo.Split(',').Length];
@@ -568,8 +572,8 @@ namespace SPPipAPi.Controllers
                 if (AssignedTo != "")
                 {
 
-                    list2["AssignedTo"] = createuser;
 
+                    list2["AssignedTo"] = createuser;
 
                     /* old list2["approveduser"] = assignuser;
                     list2["AssignedTo"] = createuser;*/
@@ -589,23 +593,23 @@ namespace SPPipAPi.Controllers
 
                     if (Comments.ToLower() == "!comments!")
                     {
-                        list2["PercentComplete"] = 1;
+                        list2["PercentComplete"] = percentComplete;
                         list2["Status"] = status;
                         list2["TaskOutcome"] = status;
                         list2["comments"] = Comments;
                         list2["event"] = assignevent;
-                        list2["tasktype"] = TASKTYPE;
+                        list2["tasktype"] = "1";
 
                     }
                     else
                     {
 
-                        list2["PercentComplete"] = 1;
+                        list2["PercentComplete"] = percentComplete;
                         list2["Status"] = status;
                         list2["TaskOutcome"] = status;
                         list2["comments"] = Comments;
                         list2["event"] = assignevent;
-                        list2["tasktype"] = TASKTYPE;
+                        list2["tasktype"] = "1";
                         //list2["comments"] = Comments;
                     }
                     // list2["Status"] = "Rejected";
@@ -613,20 +617,11 @@ namespace SPPipAPi.Controllers
                     list2.Update();
                     clientContext.ExecuteQuery();
                 }
-                else
-                {
-                    list2["PercentComplete"] = percentComplete;
-                    list2["Status"] = status;
-                    list2["TaskOutcome"] = status;
-                    list2["comments"] = Comments;
-                    // list2["event"] = assignevent;
-                    list2.Update();
-                    clientContext.ExecuteQuery();
-                }
+
                 if (areviewuserTo != null && areviewuserTo != "" && (TASKTYPE == "2" || TASKTYPE == "3"))
                 {
                     ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
-                    ListItem oItem = oList.AddItem(oListItemCreationInformation);
+
 
 
                     var lookupValue = new FieldLookupValue();
@@ -634,11 +629,14 @@ namespace SPPipAPi.Controllers
                     var lookupValueCollection = new FieldLookupValue[1];
                     lookupValueCollection.SetValue(lookupValue, 0);
 
-                    FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[areviewuserTo.Split(',').Length];
+                    //FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[areviewuserTo.Split(',').Length];
+                    FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[1];
                     //for multiple assigies should be send , separate paramers
                     i = 0;
                     foreach (string auser in areviewuserTo.Split(','))
                     {
+
+                        ListItem oItem = oList.AddItem(oListItemCreationInformation);
                         assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
                         clientContext.Load(assignuser);
                         clientContext.ExecuteQuery();
@@ -647,28 +645,59 @@ namespace SPPipAPi.Controllers
 
                             FieldUserValue fieldUserVal = new FieldUserValue();
                             fieldUserVal.LookupId = assignuser.Id;
-
-                            //fieldUserVal.l = assignuser.LoginName;
-                            AreveiweruserValueCollection.SetValue(fieldUserVal, i);
+                            AreveiweruserValueCollection.SetValue(fieldUserVal, 0);
                             i++;
 
                         }
 
+                        oItem["AssignedTo"] = createuser;
+                        // below column is userd to set the aditional review user store
+                        oItem["areviewuser"] = AreveiweruserValueCollection;
+                        if (TASKTYPE == "2")
+                            oItem["Title"] = "Additional Review";
+                        else if (TASKTYPE == "3")
+                            oItem["Title"] = "ROP";
+                        else
+                            oItem["Title"] = "sub task";
+                        oItem["ParentID"] = lookupValueCollection; // set chidl item ParentID field  
+                        oItem["tasktype"] = TASKTYPE;
+                        oItem["relateditem"] = SPFmrID;
+                        oItem["PercentComplete"] = 0;
+                        oItem.Update();
+                        clientContext.ExecuteQuery();
+
                     }
 
-                    oItem["AssignedTo"] = AreveiweruserValueCollection;
-                    if (TASKTYPE == "2")
-                        oItem["Title"] = "Additional Review";
-                    else if (TASKTYPE == "3")
-                        oItem["Title"] = "ROP";
-                    else
-                        oItem["Title"] = "sub task";
-                    oItem["ParentID"] = lookupValueCollection; // set chidl item ParentID field  
-                    oItem["tasktype"] = TASKTYPE;
-                    oItem["relateditem"] = SPFmrID;
-                    oItem.Update();
+
+                    //for close current task and assign to next user
+
+                    list2["PercentComplete"] = percentComplete;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = status;
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                    list2["tasktype"] = TASKTYPE;
+                    list2.Update();
                     clientContext.ExecuteQuery();
+
+
                 }
+                else if ((TASKTYPE == "2" || TASKTYPE == "3"))
+                {
+
+                    /// for closing or update current task id 
+                    list2["PercentComplete"] = percentComplete;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = status;
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                    list2["tasktype"] = TASKTYPE;
+                    list2.Update();
+                    clientContext.ExecuteQuery();
+
+                }
+
+
 
 
 
@@ -679,6 +708,11 @@ namespace SPPipAPi.Controllers
                 {
                     isWait = true;
                     getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/Pipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", AssignedTo, SPFmrID));
+                }
+
+                if (strcallbackurl != null && strcallbackurl != "")
+                {
+                    string strResp = ClsGeneral.DoWebGetRequest(strcallbackurl.Replace("~", "&"), "");
                 }
                 //end of the 
             }
@@ -697,7 +731,14 @@ namespace SPPipAPi.Controllers
             //http://52.172.200.35:2020/sppipapidevtesting/api/Pipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
             // http://sharepoint2/sites/teamsiteex/pipflowsitetesting/_api/web/lists/getbytitle('Workflow%20Tasks')/items?$top=1&$orderby=Id%20desc
             if (isWait)
-                Thread.Sleep(10000);
+            {
+                int i_Taskwaittime = 10000;
+                if (ConfigurationManager.AppSettings["TASK_WAIT_TIME"] != null)
+                    i_Taskwaittime = int.Parse(ConfigurationManager.AppSettings["TASK_WAIT_TIME"]);
+                Thread.Sleep(i_Taskwaittime);
+
+            }
+
             string strResp = ClsGeneral.DoWebGetRequest(_Url, "");
 
             /*  string[] strRespsplit1 = strResp.Split(new string[] { "<d:ID" },StringSplitOptions.None);
@@ -1087,13 +1128,14 @@ namespace SPPipAPi.Controllers
             // prepare site connection
             try
             {
+                if (TaskType == null) TaskType = "";
                 if (status == null) status = "";
                 // global parameters
                 Taskuser = Taskuser == null ? "" : Taskuser;
                 ReleatedItems = ReleatedItems == null ? "" : "," + ReleatedItems + ",";
 
                 CamlQuery camlQuery = new CamlQuery();
-                camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
+                camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
                 // camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='ParentID'/><Value Type='Counter'>569</Value></Eq></Where></Query></View>", Taskuser);
 
                 //< View Scope = "RecursiveAll" >< Query >< Where >< Eq >< FieldRefName = "ParentID" />< ValueType = "Counter" > 1 </ Value ></ Eq ></ Where ></ Query ></ View >
@@ -1133,7 +1175,11 @@ namespace SPPipAPi.Controllers
 
                 foreach (ListItem oListItem in olists)
                 {
-
+                    if (TaskType != "" && TaskType != "1")
+                    {
+                        getSubTasks(ref respmsg, ReleatedItems, Taskuser, status, TaskType);
+                        break;
+                    }
                     // create and cast the FieldUserValue from the value
                     FieldUserValue fuvAssignedTo = null;
                     FieldUserValue fuvapproveduser = null;
@@ -1160,14 +1206,10 @@ namespace SPPipAPi.Controllers
                             fuvareviewuser = userValue;
                         }
 
-                    if (TaskType != "" && TaskType != "1")
-                    {
-                        getSubTasks(ref respmsg, oListItem.Id.ToString(), Taskuser, TaskType);
-                        continue;
-                    }
+
                     // assigned to for listing the data
-                    if (oListItem["AssignedTo"] != null && Taskuser != "")
-                        if (fuvAssignedTo.LookupValue.ToLower() != Taskuser.ToLower()) continue;
+                    if (oListItem["AssignedTo"] != null && Taskuser != "" && (TaskType == "" || TaskType == "1"))
+                        if (replaceExtraLoginNameContent(fuvAssignedTo.LookupValue.ToLower()) != Taskuser.ToLower()) continue;
 
                     if (oListItem["Editor"] != null)
                         fuvEditor = (FieldUserValue)oListItem["Editor"];
@@ -1185,10 +1227,10 @@ namespace SPPipAPi.Controllers
                     // related item to for listing the data filtering
                     if (ReleatedItems != "" && ReleatedItems.Contains("," + RelItem + ",") != true)
                         continue;
+
+                   
                     if (status != "" && oListItem["Status"].ToString().ToLower() != status.ToLower()) continue;
-
                     if (TaskType != "" && oListItem["tasktype"] != null && oListItem["tasktype"].ToString().ToLower() != TaskType.ToLower()) continue;
-
 
 
                     respmsg.Add(new pipflow
@@ -1198,11 +1240,11 @@ namespace SPPipAPi.Controllers
                         taskoutcome = (oListItem["TaskOutcome"] != null) ? oListItem["TaskOutcome"].ToString() : "",
                         RelatedItems = (oListItem["RelatedItems"] != null) ? RelItem : "",
                         status = (oListItem["Status"] != null) ? oListItem["Status"].ToString() : "",
-                        assigned_to = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupValue : "",
+                        assigned_to = (oListItem["AssignedTo"] != null) ? replaceExtraLoginNameContent(fuvAssignedTo.LookupValue) : "",
                         assigned_to_id = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                        approveduser_to = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupValue : "",
+                        approveduser_to = (oListItem["approveduser"] != null) ? replaceExtraLoginNameContent(fuvAssignedTo.LookupValue) : "",
                         approveduser_to_id = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                        areviewuser_to = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupValue : "",
+                        areviewuser_to = (oListItem["areviewuser"] != null) ? replaceExtraLoginNameContent(fuvAssignedTo.LookupValue) : "",
                         areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
                         Modified_By = (oListItem["Editor"] != null) ? fuvEditor.LookupValue : "",
                         Modified_By_id = (oListItem["Editor"] != null) ? fuvEditor.LookupId.ToString() : "",
@@ -1226,11 +1268,21 @@ namespace SPPipAPi.Controllers
 
 
         }
-        private void getSubTasks(ref List<pipflow> respmsg, string _parentID, string Taskuser, string TaskType)
+
+        private string replaceExtraLoginNameContent(string _loginname)
+        {
+            if (_loginname.Contains("snc"))
+                return _loginname.Replace(_loginname, "snc");
+            else
+                return _loginname.Replace(",#", "");
+        }
+        private void getSubTasks(ref List<pipflow> respmsg, string ReleatedItems, string Taskuser,string status, string TaskType)
         {
             CamlQuery camlQuery = new CamlQuery();
             //camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
-            camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='ParentID'/><Value Type='Counter'>{0}</Value></Eq></Where></Query></View>", _parentID);
+            // camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='ParentID'/><Value Type='Counter'>{0}</Value></Eq></Where></Query></View>", _parentID);
+            camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='tasktype'/><Value Type='Number'>{0}</Value></Eq></Where></Query></View>", TaskType);
+            //camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'></View>", _parentID);
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
 
@@ -1260,7 +1312,7 @@ namespace SPPipAPi.Controllers
             foreach (ListItem oListItem in olists)
             {
 
-                if (oListItem["tasktype"] != null && TaskType != oListItem["tasktype"].ToString()) continue;
+              //  if (oListItem["tasktype"] != null && oListItem["tasktype"].ToString() != "" && TaskType != oListItem["tasktype"].ToString()) continue;
                 // create and cast the FieldUserValue from the value
                 FieldUserValue fuvAssignedTo = null;
                 FieldUserValue fuvapproveduser = null;
@@ -1275,8 +1327,11 @@ namespace SPPipAPi.Controllers
                         fuvAssignedTo = userValue;
                     }
 
-                if (oListItem["AssignedTo"] != null && Taskuser != "")
-                    if (fuvAssignedTo.LookupValue.ToLower() != Taskuser.ToLower()) continue;
+                if (oListItem["relateditem"]!=null && ReleatedItems != "" && ReleatedItems.Contains("," + oListItem["relateditem"].ToString() + ",") != true)
+                    continue;
+
+               
+                if (status != "" && oListItem["Status"].ToString().ToLower() != status.ToLower()) continue;
 
                 if (oListItem["approveduser"] != null)
                     foreach (FieldUserValue userValue in oListItem["approveduser"] as FieldUserValue[])
@@ -1290,6 +1345,12 @@ namespace SPPipAPi.Controllers
                         //string test = userValue.LookupId;
                         fuvareviewuser = userValue;
                     }
+
+                if (oListItem["areviewuser"] == null)
+                    continue;
+                if (oListItem["areviewuser"] != null && Taskuser != "")
+                    if (fuvareviewuser.LookupValue.ToLower() != Taskuser.ToLower()) continue;
+               
                 // assigned to for listing the data
                 if (oListItem["ParentID"] != null)
                     fuvParentID = (FieldLookupValue)oListItem["ParentID"];
@@ -1320,10 +1381,10 @@ namespace SPPipAPi.Controllers
                     status = (oListItem["Status"] != null) ? oListItem["Status"].ToString() : "",
                     assigned_to = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupValue : "",
                     assigned_to_id = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                    approveduser_to = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupValue : "",
-                    approveduser_to_id = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                    areviewuser_to = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupValue : "",
-                    areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
+                    approveduser_to = (oListItem["approveduser"] != null) ? fuvapproveduser.LookupValue : "",
+                    approveduser_to_id = (oListItem["approveduser"] != null) ? fuvapproveduser.LookupId.ToString() : "",
+                    areviewuser_to = (oListItem["areviewuser"] != null) ? fuvareviewuser.LookupValue : "",
+                    areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvareviewuser.LookupId.ToString() : "",
                     Modified_By = (oListItem["Editor"] != null) ? fuvEditor.LookupValue : "",
                     Modified_By_id = (oListItem["Editor"] != null) ? fuvEditor.LookupId.ToString() : "",
                     Created_By = (oListItem["Author"] != null) ? fuvAuthor.LookupValue : "",
