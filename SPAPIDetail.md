@@ -82,7 +82,7 @@ https://<IP>api/Pipflow/spgetListItemByID?listname=<pipflow1>&ListitemId=<43>
 5.
 # Set the sharepont Task list Item   based on status,percentcomplete,comments,taskid and assignevent
 
-https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<created by user>&assignevent=<eventid>&assignedto=<assigned to user>
+https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&comments=<how%20r%20ou>&taskid=<449>&createdby=<created by user>&assignevent=<eventid>&assignedto=<assigned to user>&TASKTYPE=1
   
   Method type : GET or POST
   
@@ -94,6 +94,9 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
              createdby : current login user from UI or u can take from FMR LIST current assigni
              assignevent : send the event id as integer based on 9th API details. 
              assignedto : send the next approval user based on role to user mapping from UI. 
+             TASKTYPE : 1 or 2 or 3 1 for normal flow,2 for additional flow,3 for ROP flow
+             areviewuserTo: Need to be send for Aditional or ROP user 
+             SPFmrID: send the current FMR ID 
              *Note  : createdby and assignedto parameters should be "user login name" which are mapped to Sharepoint users
  
   Response output: {"Message":"Success"}
@@ -102,6 +105,33 @@ https://<IP>api/Pipflow/spsetTaskItemByID?status=<Approved>&percentComplete=<1>&
   eg url path : http://localhost:56643/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20ou&taskid=449&createdby=spm&assignevent=1assignedto=spm
   
   live url : http://40.70.16.29:8080/api/Pipflow/spsetTaskItemByID?status=Approved&percentComplete=1&comments=how%20r%20o&taskid=1008&createdby=md&assignevent=22&assignedto=spm
+  
+5.1 For Aditional review like sub task style
+    
+    only sub task assign to user
+Eg link: 
+http://localhost:44359/api/Pipflow/spsetTaskItemByID?status=approved&percentComplete=1&comments=testing&taskid=593&createdby=spm&assignevent=1&assignedto=&TASKTYPE=2&areviewuserTo=md&SPFmrID=193
+
+
+    for multi users sub tasks 
+Eg link: 
+http://localhost:44359/api/Pipflow/spsetTaskItemByID?status=approved&percentComplete=0&comments=testing&taskid=593&createdby=spm&assignevent=1&assignedto=&TASKTYPE=2&areviewuserTo=md,snc,pdspoc,pdspoc2&SPFmrID=193
+
+    For close the sub task plz send subtask taskid and percentC1ompleted send to 1
+Eg link: 
+http://localhost:44359/api/Pipflow/spsetTaskItemByID?status=approved&percentComplete=1&comments=testing jkhjkhkh &taskid=610&createdby=ca&assignevent=1&assignedto=&TASKTYPE=2&areviewuserTo=&SPFmrID=193
+
+
+    For close the sub task and assign to respective user plz send subtask taskid and percentC1ompleted send to 1
+Eg link: 
+http://localhost:44359/api/Pipflow/spsetTaskItemByID?status=approved&percentComplete=1&comments=testing jkhjkhkh &taskid=603&createdby=md&assignevent=1&assignedto=&TASKTYPE=2&areviewuserTo=spm&SPFmrID=193
+
+
+    FOr get the user wise sub tasks basded areviewuser tasktype 2 
+Eg link: 
+http://localhost:44359/api/Pipflow/spgetTaskDetails?listname&taskuser=spm&ReleatedItems=&status=Not%20Started&TaskType=2
+
+
 # end 
 6.
 # Get the sharepont tasks  based on list and task item id
@@ -125,7 +155,7 @@ https://<IP>api/Pipflow/spgetTaskDetailsByuser?listname=<tasklist>&ListitemId=<4
 7.
 # Get the sharepont Tasks list Item  based on TItle,Taskuser and ReleatedItems
 
-http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>&ReleatedItems=<, separate Main List IDs >&status={status}
+http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>&ReleatedItems=<, separate Main List IDs >&status={status}&TaskTYpe={TaskTYpe}
   
   Method type : GET or POST
   
@@ -135,13 +165,19 @@ http://<IP>api/Pipflow/spgetTaskDetails?listname=<tasklist>&Taskuser=<user name>
              Taskuser : Pass user name
              ReleatedItems : ,(coma) separate Main List IDs or single id
              status : based on rejected/approved/not started task will be getting
-             
+             TaskTYpe: 1 for Normal ,2 for Addtional ,3 for ROP
   Response output:
   
               success: [{"id":"482","title":"Task start and assing by i:0#.w|mylabsp\\spm","status":"Not Started","remarks":null,"taskoutcome":"","RelatedItems":"61","Modified_By":"SharePoint App","Modified_By_id":"1073741822","Created_By":"SharePoint App","Created_By_id":"1073741822","assigned_to":"SPM","assigned_to_id":"26","Modified_Date":null},{"id":"483","title":"Task start and assing by i:0#.w|mylabsp\\spm","status":"Not Started","remarks":null,"taskoutcome":"","RelatedItems":"56","Modified_By":"SharePoint App","Modified_By_id":"1073741822","Created_By":"SharePoint App","Created_By_id":"1073741822","assigned_to":"SPM","assigned_to_id":"26","Modified_Date":null},{"id":"485","title":"Task start and assing by i:0#.w|mylabsp\\spm","status":"Not Started","remarks":null,"taskoutcome":"","RelatedItems":"51","Modified_By":"SharePoint App","Modified_By_id":"1073741822","Created_By":"SharePoint App","Created_By_id":"1073741822","assigned_to":"SPM","assigned_to_id":"26","Modified_Date":null}]
               fail:  exception string will send
   
   eg url path : http://localhost:56643/api/Pipflow/spgetTaskDetails?listname&taskuser=spm&ReleatedItems=61,51,56&status=not started
+  
+  7.1 For getting the Additional review details based on TaskTYpe 2
+  
+     FOr get the user wise sub tasks basded areviewuser tasktype 2
+Eg link: 
+      http://localhost:44359/api/Pipflow/spgetTaskDetails?listname&taskuser=spm&ReleatedItems=&status=Not%20Started&TaskType=2  
 # end 
 8.
 # Get user info based on login details 
