@@ -1242,10 +1242,10 @@ namespace SPPipAPi.Controllers
                         status = (oListItem["Status"] != null) ? oListItem["Status"].ToString() : "",
                         assigned_to = (oListItem["AssignedTo"] != null) ? replaceExtraLoginNameContent(fuvAssignedTo.LookupValue) : "",
                         assigned_to_id = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                        approveduser_to = (oListItem["approveduser"] != null) ? replaceExtraLoginNameContent(fuvAssignedTo.LookupValue) : "",
-                        approveduser_to_id = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                        areviewuser_to = (oListItem["areviewuser"] != null) ? replaceExtraLoginNameContent(fuvAssignedTo.LookupValue) : "",
-                        areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
+                        approveduser_to = (oListItem["approveduser"] != null) ? replaceExtraLoginNameContent(fuvapproveduser.LookupValue) : "",
+                        approveduser_to_id = (oListItem["approveduser"] != null) ? fuvapproveduser.LookupId.ToString() : "",
+                        areviewuser_to = (oListItem["areviewuser"] != null) ? replaceExtraLoginNameContent(fuvareviewuser.LookupValue) : "",
+                        areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvareviewuser.LookupId.ToString() : "",
                         Modified_By = (oListItem["Editor"] != null) ? fuvEditor.LookupValue : "",
                         Modified_By_id = (oListItem["Editor"] != null) ? fuvEditor.LookupId.ToString() : "",
                         Created_By = (oListItem["Author"] != null) ? fuvAuthor.LookupValue : "",
@@ -1271,10 +1271,12 @@ namespace SPPipAPi.Controllers
 
         private string replaceExtraLoginNameContent(string _loginname)
         {
-            if (_loginname.Contains("snc"))
+            if (_loginname.EndsWith("snc") && _loginname.Contains(",#"))
                 return _loginname.Replace(_loginname, "snc");
-            else
+            else if(_loginname.Contains(",#"))
                 return _loginname.Replace(",#", "");
+            else
+               return _loginname;
         }
         private void getSubTasks(ref List<pipflow> respmsg, string ReleatedItems, string Taskuser,string status, string TaskType)
         {
