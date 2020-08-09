@@ -108,6 +108,9 @@ Below links very helpfull to do this :
   
   https://techcommunity.microsoft.com/t5/core-infrastructure-and-security/sharepoint-database-maintenance-recommendations/ba-p/323370
   
+  -- increase work flow performance
+  
+  https://www.cloudsecuritea.com/2015/04/increase-sharepoint-workflow-performance-and-reliability/  
 # end 
 
 
