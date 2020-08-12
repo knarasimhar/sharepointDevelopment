@@ -241,6 +241,10 @@ http://localhost:56643/api/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrS
 live: http://52.172.200.35:2020/sppipapidev/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remarks={remarks}&status={status}
 # end 
 
+# Start Suplimentary only replace controller Pipflow to SupliPipflow
+SUPLIMENTARY FMRS same as above all APIS so plz note all signature with replace of controller Pipflow to SupliPipflow
+# END suplimentart
+
 # Start Active directory USER start API
 
 # for Active direcotory USER list , add & update APIS
