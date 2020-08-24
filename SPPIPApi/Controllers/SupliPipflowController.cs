@@ -28,6 +28,8 @@ namespace SPPipAPi.Controllers
     [EnableCors(origins: "http://sharepoint2:8081,http://localhost:44349", headers: "*", methods: "*")]
     public class SupliPipflowController : ApiController
     {
+       
+        // GET api/values/5
         String strSiteURL = "http://sharepoint2/sites/teamsiteex/PipFlowSite", strUSER = "spuser2", strPWD = "User@123#", strADUserURL = "", SitepathValue = "";
         string SITE_API_URL = "";
         string strDomainName = ConfigurationManager.AppSettings["DomainName"].ToString();
@@ -35,7 +37,6 @@ namespace SPPipAPi.Controllers
         string cPipflowListName = "Spipflow1";
         string cPipdeptListName = "Spipdept";
         string cWfListName = "WFSstatus Tasks";
-
         public SupliPipflowController()
         {
             if (ConfigurationManager.AppSettings["SITE_URL"] != null)
@@ -160,7 +161,7 @@ namespace SPPipAPi.Controllers
 
                 CamlQuery camlQuery = new CamlQuery();
 
-                camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
+                camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
                 //camlQuery.ViewXml = "<Where><Eq><FieldRef Name='Author' LookupId='True' /><Value Type='User'>123</Value></Eq></Where>";
                 // camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRef Name='Author' LookupId='TRUE' /><Value Type='Integer'>{0}</Value></Eq></Where><View><Query>", 4);
                 // camlQuery.ViewXml = "<View><Where><Eq><FieldRef Name='ry3a' /><Value Type='User'>SPM</Value></Eq></Where></View>";
@@ -176,7 +177,7 @@ namespace SPPipAPi.Controllers
                 clientContext.Load(user);
                 clientContext.ExecuteQuery();
 
-                List list = web.Lists.GetByTitle(cPipflowListName);
+                List list = web.Lists.GetByTitle(Listname);
 
                 Console.WriteLine("Client context::  " + clientContext.ToString());
                 ListItemCollection olists;
@@ -262,7 +263,8 @@ namespace SPPipAPi.Controllers
                                 strLookupAssignTOvalues += FUV.LookupValue + ",";
                             }
                         }
-
+                        // new code implemented for eliminate the task geranration time 
+                        //  string currentTaskID = getCurrentTaskIDofFMR(oListItem.Id.ToString(), strLookupAssignTOIds);
                         respmsg.Add(new fmrlist
                         {
                             id = oListItem.Id.ToString(),
@@ -302,6 +304,59 @@ namespace SPPipAPi.Controllers
 
 
         }
+
+
+        private string getCurrentTaskIDofFMR(string FMRID, string Userid)
+        {
+
+            CamlQuery camlQuery = new CamlQuery();
+            //camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
+            // camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='ParentID'/><Value Type='Counter'>{0}</Value></Eq></Where></Query></View>", _parentID);
+            // camlQuery.ViewXml = string.Format("<View><Query><Where><In><FieldRef Name='RelatedItems'/><Value Type='Number'>{0}</Value></In></Where></Query></View>", ReleatedItems);
+            camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRef Name='Status'/><Value Type='Choice'>Not Started</Value></Eq>"
+                                               + "<Eq><FieldRef Name='AssignedTo'/><Value Type='UserMulti'>{0}</Value></Eq><Contains><FieldRef Name='RelatedItems'/><Value Type='Text'>:{1},</Value></Contains>"
+                                                + "</Where></Query></View>", Userid.TrimEnd(','), FMRID);
+
+            // camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRefName='Status'/><ValueType='Choice'>Not Started</Value></Eq></Where></Query></View>", Userid);
+
+            ClientContext clientContext = new ClientContext(strSiteURL);
+            clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
+            try
+            {
+                Web web = clientContext.Web;
+                clientContext.Load(web);
+                //  var tasks;
+                // clientContext.Load(tasks, c => c.Where(t => t.Parent != null && t.Parent.Id == parentId));
+                List list = web.Lists.GetByTitle(cWfListName);
+                ListItemCollection olists = list.GetItems(camlQuery);
+                // Console.WriteLine("List ID::  " + list.Id);
+                clientContext.Load(olists,
+                     items => items.Include(
+                        item => item.Id,
+                         item => item["RelatedItems"]
+                       ));
+                clientContext.ExecuteQuery();
+                foreach (ListItem oListItem in olists)
+                {
+                    if (oListItem["RelatedItems"] != null && oListItem["RelatedItems"].ToString() != "")
+                    {
+
+                        List<RelatedItemFieldValue> obj = JsonConvert.DeserializeObject<List<RelatedItemFieldValue>>(oListItem["RelatedItems"].ToString());
+                        if (obj != null)
+                            if (FMRID == obj[0].ItemId.ToString())
+                                return oListItem.Id.ToString();
+                    }
+
+
+                }
+            }
+            catch (Exception ex)
+            {
+                return ex.Message;
+            }
+            return "";
+        }
+
 
 
         [Route("api/SupliPipflow/spsetFMR")]
@@ -378,7 +433,6 @@ namespace SPPipAPi.Controllers
                 clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
 
 
-
                 List oList;
                 if (Listname != "")
                     oList = clientContext.Web.Lists.GetByTitle(Listname);
@@ -431,7 +485,7 @@ namespace SPPipAPi.Controllers
 
                 Web web = clientContext.Web;
                 clientContext.Load(web);
-                List list = web.Lists.GetByTitle(cPipflowListName);
+                List list = web.Lists.GetByTitle(Listname);
                 ListItem targetListItem = list.GetItemById(ListitemId);
                 //clientContext.ExecuteQuery();
 
@@ -491,18 +545,19 @@ namespace SPPipAPi.Controllers
 
 
         }
-        // TASKTYPE 1 FOR NORMAL,2 FOR ADD REVIEW,3 FOR ROP
-        // below for workflow task assign and reject and others tagas 
-        [Route("api/SupliPipflow/spsetTaskItemByID")]
 
+        [Route("api/SupliPipflow/spsetSingleTaskItemByID")]
         [HttpGet, HttpPost]
-        public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "", string areviewuserTo = "", string SPFmrID = "", string TASKTYPE = "")
+        public HttpResponseMessage spsetSingleTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "", string areviewuserTo = "", string SPFmrID = "", string TASKTYPE = "", string callbackurl = "")
         {
             // prepare site connection
+            string strcallbackurl = callbackurl;
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential("spm", "pip@123");
             if (AssignedTo == null) AssignedTo = "";
+            if (percentComplete == null) percentComplete = "1";
             if (TASKTYPE == null) TASKTYPE = "1";
+            status = "Not started";
             try
             {
 
@@ -533,6 +588,493 @@ namespace SPPipAPi.Controllers
                 User assignuser = null;
                 clientContext.Load(createuser);
                 int i = 0;
+
+                // if assignedTo is null its related to sub task only 
+                if (AssignedTo != "")
+                {
+                    FieldUserValue[] userValueCollection = new FieldUserValue[AssignedTo.Split(',').Length];
+                    //for multiple assigies should be send , separate paramers
+
+                    foreach (string auser in AssignedTo.Split(','))
+                    {
+                        assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
+
+                        clientContext.Load(assignuser);
+                        clientContext.ExecuteQuery();
+                        if (assignuser != null)
+                        {
+
+                            FieldUserValue fieldUserVal = new FieldUserValue();
+                            fieldUserVal.LookupId = assignuser.Id;
+                            //fieldUserVal.LookupValue = assignuser.LoginName;
+
+                            userValueCollection.SetValue(fieldUserVal, i);
+                            i++;
+
+                        }
+
+                    }
+                    list2["approveduser"] = userValueCollection;
+                }
+
+
+
+                //list2["AssignedTo"] = @"it1";
+                //list2["Completed"] = true;
+                if (TASKTYPE == "1") percentComplete = "0.9";
+
+
+                if (AssignedTo != "")
+                {
+
+
+                    list2["AssignedTo"] = createuser;
+
+                    /* old list2["approveduser"] = assignuser;
+                    list2["AssignedTo"] = createuser;*/
+
+
+                    /* sub tqaswk creations */
+
+
+
+                    /*  if (list2["RelatedItems"] != null)
+                      {
+
+                          List<RelatedItemFieldValue> obj = JsonConvert.DeserializeObject<List<RelatedItemFieldValue>>(list2["RelatedItems"].ToString());
+                          if (obj != null)
+                              strRelatedID = obj[0].ItemId.ToString();
+                      }*/
+
+                    if (Comments.ToLower() == "!comments!")
+                    {
+                        list2["PercentComplete"] = percentComplete;
+                        list2["Status"] = status;
+                        list2["TaskOutcome"] = "";
+                        list2["comments"] = Comments;
+                        list2["event"] = assignevent;
+                        list2["tasktype"] = "1";
+
+                    }
+                    else
+                    {
+
+                        list2["PercentComplete"] = percentComplete;
+                        list2["Status"] = status;
+                        list2["TaskOutcome"] = "";
+                        list2["comments"] = Comments;
+                        list2["event"] = assignevent;
+                        list2["tasktype"] = "1";
+                        //list2["comments"] = Comments;
+                    }
+                    // list2["Status"] = "Rejected";
+                    // list2["TaskOutcome"] = "Rejected";
+                    list2.Update();
+                    clientContext.ExecuteQuery();
+                }
+
+                if (areviewuserTo != null && areviewuserTo != "" && (TASKTYPE == "2" || TASKTYPE == "3"))
+                {
+                    ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
+
+
+
+                    var lookupValue = new FieldLookupValue();
+                    lookupValue.LookupId = int.Parse(taskid); // Get parent item ID and assign it value in lookupValue.LookupId  
+                    var lookupValueCollection = new FieldLookupValue[1];
+                    lookupValueCollection.SetValue(lookupValue, 0);
+
+                    //FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[areviewuserTo.Split(',').Length];
+                    FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[1];
+                    //for multiple assigies should be send , separate paramers
+                    i = 0;
+                    foreach (string auser in areviewuserTo.Split(','))
+                    {
+
+                        ListItem oItem = oList.AddItem(oListItemCreationInformation);
+                        assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
+                        clientContext.Load(assignuser);
+                        clientContext.ExecuteQuery();
+                        if (assignuser != null)
+                        {
+
+                            FieldUserValue fieldUserVal = new FieldUserValue();
+                            fieldUserVal.LookupId = assignuser.Id;
+                            AreveiweruserValueCollection.SetValue(fieldUserVal, 0);
+                            i++;
+
+                        }
+
+                        oItem["AssignedTo"] = createuser;
+                        // below column is userd to set the aditional review user store
+                        oItem["areviewuser"] = AreveiweruserValueCollection;
+                        if (TASKTYPE == "2")
+                            oItem["Title"] = "Additional Review";
+                        else if (TASKTYPE == "3")
+                            oItem["Title"] = "ROP";
+                        else
+                            oItem["Title"] = "sub task";
+                        oItem["ParentID"] = lookupValueCollection; // set chidl item ParentID field  
+                        oItem["tasktype"] = TASKTYPE;
+                        oItem["relateditem"] = SPFmrID;
+                        oItem["PercentComplete"] = 0;
+                        oItem.Update();
+                        clientContext.ExecuteQuery();
+
+                    }
+
+
+                    //for close current task and assign to next user
+
+                    list2["PercentComplete"] = percentComplete;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = "";
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                    list2["tasktype"] = TASKTYPE;
+                    list2.Update();
+                    clientContext.ExecuteQuery();
+
+
+                }
+                else if ((TASKTYPE == "2" || TASKTYPE == "3"))
+                {
+
+                    /// for closing or update current task id 
+                    list2["PercentComplete"] = percentComplete;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = status;
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                    list2["tasktype"] = TASKTYPE;
+                    list2.Update();
+                    clientContext.ExecuteQuery();
+
+                }
+
+
+
+
+
+                // updated latest task id to FMR list for viewing
+                //http://52.172.200.35:2020/sppipapidevtesting/api/SupliPipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
+                /*
+                                if (SPFmrID != null && SPFmrID != "" && AssignedTo != null && AssignedTo != "")
+                                {
+                                    isWait = true;
+                                    getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/SupliPipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", AssignedTo, SPFmrID));
+                                }
+
+                                if (strcallbackurl != null && strcallbackurl != "")
+                                {
+                                    string strResp = ClsGeneral.DoWebGetRequest(strcallbackurl.Replace("~", "&"), "");
+                                }
+                                //end of the 
+
+                                */
+            }
+            catch (Exception ex)
+            {
+
+                return getErrormessage(ex.Message);
+            }
+            return getSuccessmessage("Success");
+
+        }
+
+
+        // TASKTYPE 1 FOR NORMAL,2 FOR ADD REVIEW,3 FOR ROP
+        // below for workflow task assign and reject and others tagas 
+        [Route("api/SupliPipflow/spsetTaskItemByID_new")]
+        [HttpGet, HttpPost]
+        public HttpResponseMessage spsetTaskItemByID_New(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "", string areviewuserTo = "", string SPFmrID = "", string TASKTYPE = "", string callbackurl = "")
+        {
+            // prepare site connection
+            string strcallbackurl = callbackurl;
+            ClientContext clientContext = new ClientContext(strSiteURL);
+            clientContext.Credentials = new NetworkCredential("spm", "pip@123");
+            if (AssignedTo == null) AssignedTo = "";
+            if (percentComplete == null) percentComplete = "1";
+            if (TASKTYPE == null) TASKTYPE = "1";
+            if (TASKTYPE == "1") percentComplete = "0.9";
+            status = "Not Started";
+            try
+            {
+
+                /* multi users assign
+                 
+
+                // Get the Look Up values from lookup coloum.
+                    string rawvalue = item["MyLookUpCol"].ToString();
+
+                    // Print information about the lookup values.
+                    SPFieldLookupValueCollection values = new SPFieldLookupValueCollection(rawvalue);
+                    
+                    Console.WriteLine("Toltal Values: {0}", values.Count);
+
+                    // Print each value.
+                    foreach (SPFieldLookupValue value in values)
+                        Console.WriteLine("\t{0} (Value {1})", value.LookupValue, value.LookupId);
+                
+    */
+
+
+
+
+
+                User createuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(createdby));
+                User assignuser = null;
+                clientContext.Load(createuser);
+
+                //Get the list items from list
+                SP.List oList = clientContext.Web.Lists.GetByTitle(cWfListName);
+                SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
+                int i = 0;
+                FieldUserValue[] userValueCollection;
+                // if assignedTo is null its related to sub task only 
+                if (AssignedTo != "")
+                {
+                    userValueCollection = new FieldUserValue[AssignedTo.Split(',').Length];
+                    //for multiple assigies should be send , separate paramers
+
+                    foreach (string auser in AssignedTo.Split(','))
+                    {
+                        assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
+
+                        clientContext.Load(assignuser);
+                        clientContext.ExecuteQuery();
+                        if (assignuser != null)
+                        {
+
+                            FieldUserValue fieldUserVal = new FieldUserValue();
+                            fieldUserVal.LookupId = assignuser.Id;
+                            //fieldUserVal.LookupValue = assignuser.LoginName;
+
+                            userValueCollection.SetValue(fieldUserVal, i);
+                            i++;
+
+                        }
+
+                    }
+                    // list2["approveduser"] = userValueCollection;
+                    list2["AssignedTo"] = userValueCollection;
+                }
+
+
+
+                //list2["AssignedTo"] = @"it1";
+                //list2["Completed"] = true;
+
+
+
+                if (AssignedTo != "")
+                {
+
+
+                    // list2["AssignedTo"] = createuser;
+                    list2["approveduser"] = createuser;
+                    /* old list2["approveduser"] = assignuser;
+                    list2["AssignedTo"] = createuser;*/
+
+
+                    /* sub tqaswk creations */
+
+
+
+                    /*  if (list2["RelatedItems"] != null)
+                      {
+
+                          List<RelatedItemFieldValue> obj = JsonConvert.DeserializeObject<List<RelatedItemFieldValue>>(list2["RelatedItems"].ToString());
+                          if (obj != null)
+                              strRelatedID = obj[0].ItemId.ToString();
+                      }*/
+
+                    if (Comments.ToLower() == "!comments!")
+                    {
+                        list2["PercentComplete"] = percentComplete;
+                        list2["Status"] = status;
+                        list2["TaskOutcome"] = "";
+                        list2["comments"] = Comments;
+                        list2["event"] = assignevent;
+                        list2["tasktype"] = "1";
+
+                    }
+                    else
+                    {
+
+                        list2["PercentComplete"] = percentComplete;
+                        list2["Status"] = status;
+                        list2["TaskOutcome"] = "";
+                        list2["comments"] = Comments;
+                        list2["event"] = assignevent;
+                        list2["tasktype"] = "1";
+                        //list2["comments"] = Comments;
+                    }
+                    // list2["Status"] = "Rejected";
+                    // list2["TaskOutcome"] = "Rejected";
+                    list2.Update();
+                    clientContext.ExecuteQuery();
+
+                    spsetAddorupdteItemByID("", cPipflowListName, "", "", SPFmrID, "", taskid, createdby, AssignedTo);
+                }
+
+                if (areviewuserTo != null && areviewuserTo != "" && (TASKTYPE == "2" || TASKTYPE == "3"))
+                {
+                    ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
+
+
+
+                    var lookupValue = new FieldLookupValue();
+                    lookupValue.LookupId = int.Parse(taskid); // Get parent item ID and assign it value in lookupValue.LookupId  
+                    var lookupValueCollection = new FieldLookupValue[1];
+                    lookupValueCollection.SetValue(lookupValue, 0);
+
+                    //FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[areviewuserTo.Split(',').Length];
+                    FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[1];
+                    //for multiple assigies should be send , separate paramers
+                    i = 0;
+                    foreach (string auser in areviewuserTo.Split(','))
+                    {
+
+                        ListItem oItem = oList.AddItem(oListItemCreationInformation);
+                        assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
+                        clientContext.Load(assignuser);
+                        clientContext.ExecuteQuery();
+                        if (assignuser != null)
+                        {
+
+                            FieldUserValue fieldUserVal = new FieldUserValue();
+                            fieldUserVal.LookupId = assignuser.Id;
+                            AreveiweruserValueCollection.SetValue(fieldUserVal, 0);
+                            i++;
+
+                        }
+
+                        oItem["AssignedTo"] = createuser;
+                        // below column is userd to set the aditional review user store
+                        oItem["areviewuser"] = AreveiweruserValueCollection;
+                        if (TASKTYPE == "2")
+                            oItem["Title"] = "Additional Review";
+                        else if (TASKTYPE == "3")
+                            oItem["Title"] = "ROP";
+                        else
+                            oItem["Title"] = "sub task";
+                        oItem["ParentID"] = lookupValueCollection; // set chidl item ParentID field  
+                        oItem["tasktype"] = TASKTYPE;
+                        oItem["relateditem"] = SPFmrID;
+                        oItem["PercentComplete"] = 0;
+                        oItem.Update();
+                        clientContext.ExecuteQuery();
+
+                    }
+
+
+                    //for close current task and assign to next user
+
+                    list2["PercentComplete"] = percentComplete;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = status;
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                    list2["tasktype"] = TASKTYPE;
+                    list2.Update();
+                    clientContext.ExecuteQuery();
+
+
+                }
+                else if ((TASKTYPE == "2" || TASKTYPE == "3"))
+                {
+
+                    /// for closing or update current task id 
+                    list2["PercentComplete"] = percentComplete;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = status;
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                    list2["tasktype"] = TASKTYPE;
+                    list2.Update();
+                    clientContext.ExecuteQuery();
+
+                }
+
+
+
+
+
+                // updated latest task id to FMR list for viewing
+                //http://52.172.200.35:2020/sppipapidevtesting/api/SupliPipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
+                /*
+                    if (SPFmrID != null && SPFmrID != "" && AssignedTo != null && AssignedTo != "")
+                    {
+                        isWait = true;
+                        getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/SupliPipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", AssignedTo, SPFmrID));
+                    }
+                    */
+                if (strcallbackurl != null && strcallbackurl != "")
+                {
+                    string strResp = ClsGeneral.DoWebGetRequest(strcallbackurl.Replace("~", "&"), "");
+                }
+                //end of the 
+            }
+            catch (Exception ex)
+            {
+
+                return getErrormessage(ex.Message);
+            }
+            return getSuccessmessage("Success");
+
+        }
+
+        // TASKTYPE 1 FOR NORMAL,2 FOR ADD REVIEW,3 FOR ROP
+        // below for workflow task assign and reject and others tagas 
+        [Route("api/SupliPipflow/spsetTaskItemByID")]
+        [HttpGet, HttpPost]
+        public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "", string areviewuserTo = "", string SPFmrID = "", string TASKTYPE = "", string callbackurl = "")
+        {
+            // prepare site connection
+            string strcallbackurl = callbackurl;
+            ClientContext clientContext = new ClientContext(strSiteURL);
+            clientContext.Credentials = new NetworkCredential("spm", "pip@123");
+            if (AssignedTo == null) AssignedTo = "";
+            if (percentComplete == null) percentComplete = "1";
+            if (TASKTYPE == null) TASKTYPE = "1";
+
+            try
+            {
+
+                /* multi users assign
+                 
+
+                // Get the Look Up values from lookup coloum.
+                    string rawvalue = item["MyLookUpCol"].ToString();
+
+                    // Print information about the lookup values.
+                    SPFieldLookupValueCollection values = new SPFieldLookupValueCollection(rawvalue);
+                    
+                    Console.WriteLine("Toltal Values: {0}", values.Count);
+
+                    // Print each value.
+                    foreach (SPFieldLookupValue value in values)
+                        Console.WriteLine("\t{0} (Value {1})", value.LookupValue, value.LookupId);
+                
+    */
+
+                User createuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(createdby));
+                User assignuser = null;
+                clientContext.Load(createuser);
+                clientContext.ExecuteQuery();
+                // new code implemented for eliminate the task geranration time 
+                if (TASKTYPE == "1")
+                    taskid = getCurrentTaskIDofFMR(SPFmrID, createuser.Id.ToString());
+
+                //Get the list items from list
+                SP.List oList = clientContext.Web.Lists.GetByTitle(cWfListName);
+
+                SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
+
+                int i = 0;
+
+                // if assignedTo is null its related to sub task only 
                 if (AssignedTo != "")
                 {
                     FieldUserValue[] userValueCollection = new FieldUserValue[AssignedTo.Split(',').Length];
@@ -570,8 +1112,8 @@ namespace SPPipAPi.Controllers
                 if (AssignedTo != "")
                 {
 
-                    list2["AssignedTo"] = createuser;
 
+                    list2["AssignedTo"] = createuser;
 
                     /* old list2["approveduser"] = assignuser;
                     list2["AssignedTo"] = createuser;*/
@@ -591,23 +1133,23 @@ namespace SPPipAPi.Controllers
 
                     if (Comments.ToLower() == "!comments!")
                     {
-                        list2["PercentComplete"] = 1;
+                        list2["PercentComplete"] = percentComplete;
                         list2["Status"] = status;
                         list2["TaskOutcome"] = status;
                         list2["comments"] = Comments;
                         list2["event"] = assignevent;
-                        list2["tasktype"] = 1;
+                        list2["tasktype"] = "1";
 
                     }
                     else
                     {
 
-                        list2["PercentComplete"] = 1;
+                        list2["PercentComplete"] = percentComplete;
                         list2["Status"] = status;
                         list2["TaskOutcome"] = status;
                         list2["comments"] = Comments;
                         list2["event"] = assignevent;
-                        list2["tasktype"] = 1;
+                        list2["tasktype"] = "1";
                         //list2["comments"] = Comments;
                     }
                     // list2["Status"] = "Rejected";
@@ -615,13 +1157,11 @@ namespace SPPipAPi.Controllers
                     list2.Update();
                     clientContext.ExecuteQuery();
                 }
-               
-
 
                 if (areviewuserTo != null && areviewuserTo != "" && (TASKTYPE == "2" || TASKTYPE == "3"))
                 {
                     ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
-                    ListItem oItem = oList.AddItem(oListItemCreationInformation);
+
 
 
                     var lookupValue = new FieldLookupValue();
@@ -629,11 +1169,14 @@ namespace SPPipAPi.Controllers
                     var lookupValueCollection = new FieldLookupValue[1];
                     lookupValueCollection.SetValue(lookupValue, 0);
 
-                    FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[areviewuserTo.Split(',').Length];
+                    //FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[areviewuserTo.Split(',').Length];
+                    FieldUserValue[] AreveiweruserValueCollection = new FieldUserValue[1];
                     //for multiple assigies should be send , separate paramers
                     i = 0;
                     foreach (string auser in areviewuserTo.Split(','))
                     {
+
+                        ListItem oItem = oList.AddItem(oListItemCreationInformation);
                         assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
                         clientContext.Load(assignuser);
                         clientContext.ExecuteQuery();
@@ -642,38 +1185,74 @@ namespace SPPipAPi.Controllers
 
                             FieldUserValue fieldUserVal = new FieldUserValue();
                             fieldUserVal.LookupId = assignuser.Id;
-
-                            //fieldUserVal.l = assignuser.LoginName;
-                            AreveiweruserValueCollection.SetValue(fieldUserVal, i);
+                            AreveiweruserValueCollection.SetValue(fieldUserVal, 0);
                             i++;
 
                         }
 
+                        oItem["AssignedTo"] = createuser;
+                        // below column is userd to set the aditional review user store
+                        oItem["areviewuser"] = AreveiweruserValueCollection;
+                        if (TASKTYPE == "2")
+                            oItem["Title"] = "Additional Review";
+                        else if (TASKTYPE == "3")
+                            oItem["Title"] = "ROP";
+                        else
+                            oItem["Title"] = "sub task";
+                        oItem["ParentID"] = lookupValueCollection; // set chidl item ParentID field  
+                        oItem["tasktype"] = TASKTYPE;
+                        oItem["relateditem"] = SPFmrID;
+                        oItem["PercentComplete"] = 0;
+                        oItem.Update();
+                        clientContext.ExecuteQuery();
+
                     }
 
-                    oItem["AssignedTo"] = AreveiweruserValueCollection;
-                    if (TASKTYPE == "2")
-                        oItem["Title"] = "Additional Review";
-                    else if (TASKTYPE == "3")
-                        oItem["Title"] = "ROP";
-                    else
-                        oItem["Title"] = "sub task";
-                    oItem["ParentID"] = lookupValueCollection; // set chidl item ParentID field  
-                    oItem["tasktype"] = TASKTYPE;
-                    oItem["relateditem"] = SPFmrID;
-                    oItem.Update();
+
+                    //for close current task and assign to next user
+
+                    list2["PercentComplete"] = percentComplete;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = status;
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                    list2["tasktype"] = TASKTYPE;
+                    list2.Update();
                     clientContext.ExecuteQuery();
+
+
                 }
+                else if ((TASKTYPE == "2" || TASKTYPE == "3"))
+                {
+
+                    /// for closing or update current task id 
+                    list2["PercentComplete"] = percentComplete;
+                    list2["Status"] = status;
+                    list2["TaskOutcome"] = status;
+                    list2["comments"] = Comments;
+                    list2["event"] = assignevent;
+                    list2["tasktype"] = TASKTYPE;
+                    list2.Update();
+                    clientContext.ExecuteQuery();
+
+                }
+
+
 
 
 
                 // updated latest task id to FMR list for viewing
                 //http://52.172.200.35:2020/sppipapidevtesting/api/SupliPipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
-
-                if (SPFmrID != null && SPFmrID != "" && AssignedTo != null && AssignedTo != "")
+                /*
+                    if (SPFmrID != null && SPFmrID != "" && AssignedTo != null && AssignedTo != "")
+                    {
+                        isWait = true;
+                        getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/SupliPipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", AssignedTo, SPFmrID));
+                    }
+                    */
+                if (strcallbackurl != null && strcallbackurl != "")
                 {
-                    isWait = true;
-                    getLatestTaskIDByFMRNO(string.Format(SITE_API_URL + "/api/SupliPipflow/spgetTaskDetails?listname&taskuser={0}&ReleatedItems={1}&status=not started", AssignedTo, SPFmrID));
+                    string strResp = ClsGeneral.DoWebGetRequest(strcallbackurl.Replace("~", "&"), "");
                 }
                 //end of the 
             }
@@ -691,7 +1270,6 @@ namespace SPPipAPi.Controllers
 
             //http://52.172.200.35:2020/sppipapidevtesting/api/SupliPipflow/spgetTaskDetails?listname&taskuser=&ReleatedItems=82&status=not started
             // http://sharepoint2/sites/teamsiteex/pipflowsitetesting/_api/web/lists/getbytitle('Workflow%20Tasks')/items?$top=1&$orderby=Id%20desc
-
             if (isWait)
             {
                 int i_Taskwaittime = 10000;
@@ -700,6 +1278,7 @@ namespace SPPipAPi.Controllers
                 Thread.Sleep(i_Taskwaittime);
 
             }
+
             string strResp = ClsGeneral.DoWebGetRequest(_Url, "");
 
             /*  string[] strRespsplit1 = strResp.Split(new string[] { "<d:ID" },StringSplitOptions.None);
@@ -713,7 +1292,7 @@ namespace SPPipAPi.Controllers
                //string id = xdoc.SelectSingleNode(@"ns:feed/ns:entry/ns:content/ns:m:properties");
                // xdoc.GetElementById("m:type")
                //update latest taskid to fmr current taskid field
-               spsetAddorupdteItemByID("", "pipflow1", "","",strRelID,"",strTaskID);*/
+               spsetAddorupdteItemByID("", cPipflowListName, "","",strRelID,"",strTaskID);*/
             List<pipflow> pipfs = JsonConvert.DeserializeObject<List<pipflow>>(strResp);
             foreach (pipflow pipf in pipfs)
             {
@@ -725,7 +1304,7 @@ namespace SPPipAPi.Controllers
         // below for workflow task assign and reject and others tagas 
         [Route("api/SupliPipflow/spsetAddorupdteItemByID")]
         [HttpGet, HttpPost]
-        public HttpResponseMessage spsetAddorupdteItemByID(string status, string Listname, string Comments, string createdby, string itemid, string keyvalue, string Taskid)
+        public HttpResponseMessage spsetAddorupdteItemByID(string status, string Listname, string Comments, string createdby, string itemid, string keyvalue, string Taskid, string AssignTo = "", string CurAssignTo = "")
         {
             // prepare site connection
             ClientContext clientContext = new ClientContext(strSiteURL);
@@ -734,13 +1313,98 @@ namespace SPPipAPi.Controllers
             try
             {
                 //Get the list items from list
-                SP.List oList = clientContext.Web.Lists.GetByTitle(cPipflowListName);
+                SP.List oList = clientContext.Web.Lists.GetByTitle(Listname);
 
                 SP.ListItem list2 = oList.GetItemById(Int32.Parse(itemid));
                 //User user = clientContext.Web.EnsureUser(@"i:0#.w|saathispdt\" + HttpUtility.UrlDecode(createdby));
                 //clientContext.Load(user);
                 //list2["AssignedTo"] = @"it1";
                 //list2["Completed"] = true;
+                if (AssignTo == null) AssignTo = "";
+
+                if (CurAssignTo == null) CurAssignTo = "";
+
+                if (CurAssignTo != "")
+                {
+
+                    int i = 0;
+                    FieldUserValue[] userValueCollection;
+                    // if assignedTo is null its related to sub task only 
+                    if (CurAssignTo != "")
+                    {
+                        userValueCollection = new FieldUserValue[CurAssignTo.Split(',').Length];
+                        //for multiple assigies should be send , separate paramers
+                        User assignuser;
+                        foreach (string auser in CurAssignTo.Split(','))
+                        {
+                            assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
+
+                            clientContext.Load(assignuser);
+                            clientContext.ExecuteQuery();
+                            if (assignuser != null)
+                            {
+
+                                FieldUserValue fieldUserVal = new FieldUserValue();
+                                fieldUserVal.LookupId = assignuser.Id;
+
+                                //fieldUserVal.LookupValue = assignuser.LoginName;
+
+                                userValueCollection.SetValue(fieldUserVal, i);
+                                i++;
+
+                            }
+
+                        }
+                        // list2["approveduser"] = userValueCollection;
+
+                        list2["currentAssignee"] = userValueCollection;
+
+                        list2.Update();
+                        clientContext.ExecuteQuery();
+                    }
+
+                }
+
+                if (AssignTo != "")
+                {
+
+
+                    User uAssignedTo = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(AssignTo));
+                    clientContext.Load(uAssignedTo);
+                    clientContext.ExecuteQuery();
+                    if (uAssignedTo != null)
+                    {
+                        FieldUserValue fieldUserVal = new FieldUserValue();
+                        fieldUserVal.LookupId = uAssignedTo.Id;
+                        //fieldUserVal.LookupValue = assignuser.LoginName;
+
+                        //userValueCollection.SetValue(fieldUserVal, i);
+                        list2["ry3a"] = fieldUserVal;
+
+                    }
+
+                }
+                /* if (CurAssignTo != "")
+                 {
+
+
+                     User uCurrAssignedTo = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(CurAssignTo));
+                     clientContext.Load(uCurrAssignedTo);
+                     clientContext.ExecuteQuery();
+                     if (uCurrAssignedTo != null)
+                     {
+                         FieldUserValue fieldUserVal2 = new FieldUserValue();
+                         fieldUserVal2.LookupId = uCurrAssignedTo.Id;
+                         //fieldUserVal.LookupValue = assignuser.LoginName;
+
+                         //userValueCollection.SetValue(fieldUserVal, i);
+                         list2["currentAssignee"] = fieldUserVal2;
+
+                     }
+
+
+
+                 }*/
                 if (Comments != "")
                     list2["comments"] = Comments;
                 if (Taskid != "")
@@ -975,7 +1639,7 @@ namespace SPPipAPi.Controllers
                 clientContext.Load(list);
                 clientContext.Load(targetListItem);
                 clientContext.ExecuteQuery();
-                // GetDoucmentHistory(pathValue, "Workflow Tasks",int.Parse(ListitemId));
+                // GetDoucmentHistory(pathValue, cWfListName,int.Parse(ListitemId));
                 //GetVersionsPageInfo(pathValue, clientContext.Credentials, list.Id, targetListItem.Id);
                 if (Vfieldname == "comments")
                 {
@@ -1089,13 +1753,14 @@ namespace SPPipAPi.Controllers
             // prepare site connection
             try
             {
+                if (TaskType == null) TaskType = "";
                 if (status == null) status = "";
                 // global parameters
                 Taskuser = Taskuser == null ? "" : Taskuser;
                 ReleatedItems = ReleatedItems == null ? "" : "," + ReleatedItems + ",";
 
                 CamlQuery camlQuery = new CamlQuery();
-                camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
+                camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
                 // camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='ParentID'/><Value Type='Counter'>569</Value></Eq></Where></Query></View>", Taskuser);
 
                 //< View Scope = "RecursiveAll" >< Query >< Where >< Eq >< FieldRefName = "ParentID" />< ValueType = "Counter" > 1 </ Value ></ Eq ></ Where ></ Query ></ View >
@@ -1120,6 +1785,7 @@ namespace SPPipAPi.Controllers
                         item => item["Title"],
                         item => item["TaskOutcome"],
                          item => item["RelatedItems"],
+
                         item => item["Status"],
                         item => item["AssignedTo"],
                         item => item["approveduser"],
@@ -1134,7 +1800,11 @@ namespace SPPipAPi.Controllers
 
                 foreach (ListItem oListItem in olists)
                 {
-
+                    if (TaskType != "" && TaskType != "1")
+                    {
+                        getSubTasks(ref respmsg, ReleatedItems, Taskuser, status, TaskType);
+                        break;
+                    }
                     // create and cast the FieldUserValue from the value
                     FieldUserValue fuvAssignedTo = null;
                     FieldUserValue fuvapproveduser = null;
@@ -1161,14 +1831,10 @@ namespace SPPipAPi.Controllers
                             fuvareviewuser = userValue;
                         }
 
-                    if (TaskType != "" && TaskType != "1")
-                    {
-                        getSubTasks(ref respmsg, oListItem.Id.ToString(), Taskuser, TaskType);
-                        continue;
-                    }
+
                     // assigned to for listing the data
-                    if (oListItem["AssignedTo"] != null && Taskuser != "")
-                        if (fuvAssignedTo.LookupValue.ToLower() != Taskuser.ToLower()) continue;
+                    if (oListItem["AssignedTo"] != null && Taskuser != "" && (TaskType == "" || TaskType == "1"))
+                        if (replaceExtraLoginNameContent(fuvAssignedTo.LookupValue.ToLower()) != Taskuser.ToLower()) continue;
 
                     if (oListItem["Editor"] != null)
                         fuvEditor = (FieldUserValue)oListItem["Editor"];
@@ -1186,10 +1852,10 @@ namespace SPPipAPi.Controllers
                     // related item to for listing the data filtering
                     if (ReleatedItems != "" && ReleatedItems.Contains("," + RelItem + ",") != true)
                         continue;
+
+
                     if (status != "" && oListItem["Status"].ToString().ToLower() != status.ToLower()) continue;
-
                     if (TaskType != "" && oListItem["tasktype"] != null && oListItem["tasktype"].ToString().ToLower() != TaskType.ToLower()) continue;
-
 
 
                     respmsg.Add(new pipflow
@@ -1199,12 +1865,12 @@ namespace SPPipAPi.Controllers
                         taskoutcome = (oListItem["TaskOutcome"] != null) ? oListItem["TaskOutcome"].ToString() : "",
                         RelatedItems = (oListItem["RelatedItems"] != null) ? RelItem : "",
                         status = (oListItem["Status"] != null) ? oListItem["Status"].ToString() : "",
-                        assigned_to = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupValue : "",
+                        assigned_to = (oListItem["AssignedTo"] != null) ? replaceExtraLoginNameContent(fuvAssignedTo.LookupValue) : "",
                         assigned_to_id = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                        approveduser_to = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupValue : "",
-                        approveduser_to_id = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                        areviewuser_to = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupValue : "",
-                        areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
+                        approveduser_to = (oListItem["approveduser"] != null) ? replaceExtraLoginNameContent(fuvapproveduser.LookupValue) : "",
+                        approveduser_to_id = (oListItem["approveduser"] != null) ? fuvapproveduser.LookupId.ToString() : "",
+                        areviewuser_to = (oListItem["areviewuser"] != null) ? replaceExtraLoginNameContent(fuvareviewuser.LookupValue) : "",
+                        areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvareviewuser.LookupId.ToString() : "",
                         Modified_By = (oListItem["Editor"] != null) ? fuvEditor.LookupValue : "",
                         Modified_By_id = (oListItem["Editor"] != null) ? fuvEditor.LookupId.ToString() : "",
                         Created_By = (oListItem["Author"] != null) ? fuvAuthor.LookupValue : "",
@@ -1227,11 +1893,23 @@ namespace SPPipAPi.Controllers
 
 
         }
-        private void getSubTasks(ref List<pipflow> respmsg, string _parentID, string Taskuser, string TaskType)
+
+        private string replaceExtraLoginNameContent(string _loginname)
+        {
+            if (_loginname.EndsWith("snc") && _loginname.Contains(",#"))
+                return _loginname.Replace(_loginname, "snc");
+            else if (_loginname.Contains(",#"))
+                return _loginname.Replace(",#", "");
+            else
+                return _loginname;
+        }
+        private void getSubTasks(ref List<pipflow> respmsg, string ReleatedItems, string Taskuser, string status, string TaskType)
         {
             CamlQuery camlQuery = new CamlQuery();
             //camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
-            camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='ParentID'/><Value Type='Counter'>{0}</Value></Eq></Where></Query></View>", _parentID);
+            // camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='ParentID'/><Value Type='Counter'>{0}</Value></Eq></Where></Query></View>", _parentID);
+            camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='tasktype'/><Value Type='Number'>{0}</Value></Eq></Where></Query></View>", TaskType);
+            //camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'></View>", _parentID);
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
 
@@ -1248,7 +1926,7 @@ namespace SPPipAPi.Controllers
                     item => item["Title"],
                     item => item["TaskOutcome"],
                      item => item["RelatedItems"],
-                    item => item["relateditem"],
+                     item => item["relateditem"],
                     item => item["Status"],
                     item => item["AssignedTo"],
                     item => item["approveduser"],
@@ -1261,7 +1939,7 @@ namespace SPPipAPi.Controllers
             foreach (ListItem oListItem in olists)
             {
 
-                if (oListItem["tasktype"] != null && TaskType != oListItem["tasktype"].ToString()) continue;
+                //  if (oListItem["tasktype"] != null && oListItem["tasktype"].ToString() != "" && TaskType != oListItem["tasktype"].ToString()) continue;
                 // create and cast the FieldUserValue from the value
                 FieldUserValue fuvAssignedTo = null;
                 FieldUserValue fuvapproveduser = null;
@@ -1276,8 +1954,11 @@ namespace SPPipAPi.Controllers
                         fuvAssignedTo = userValue;
                     }
 
-                if (oListItem["AssignedTo"] != null && Taskuser != "")
-                    if (fuvAssignedTo.LookupValue.ToLower() != Taskuser.ToLower()) continue;
+                if (oListItem["relateditem"] != null && ReleatedItems != "" && ReleatedItems.Contains("," + oListItem["relateditem"].ToString() + ",") != true)
+                    continue;
+
+
+                if (status != "" && oListItem["Status"].ToString().ToLower() != status.ToLower()) continue;
 
                 if (oListItem["approveduser"] != null)
                     foreach (FieldUserValue userValue in oListItem["approveduser"] as FieldUserValue[])
@@ -1291,6 +1972,12 @@ namespace SPPipAPi.Controllers
                         //string test = userValue.LookupId;
                         fuvareviewuser = userValue;
                     }
+
+                if (oListItem["areviewuser"] == null)
+                    continue;
+                if (oListItem["areviewuser"] != null && Taskuser != "")
+                    if (fuvareviewuser.LookupValue.ToLower() != Taskuser.ToLower()) continue;
+
                 // assigned to for listing the data
                 if (oListItem["ParentID"] != null)
                     fuvParentID = (FieldLookupValue)oListItem["ParentID"];
@@ -1321,10 +2008,10 @@ namespace SPPipAPi.Controllers
                     status = (oListItem["Status"] != null) ? oListItem["Status"].ToString() : "",
                     assigned_to = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupValue : "",
                     assigned_to_id = (oListItem["AssignedTo"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                    approveduser_to = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupValue : "",
-                    approveduser_to_id = (oListItem["approveduser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
-                    areviewuser_to = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupValue : "",
-                    areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvAssignedTo.LookupId.ToString() : "",
+                    approveduser_to = (oListItem["approveduser"] != null) ? fuvapproveduser.LookupValue : "",
+                    approveduser_to_id = (oListItem["approveduser"] != null) ? fuvapproveduser.LookupId.ToString() : "",
+                    areviewuser_to = (oListItem["areviewuser"] != null) ? fuvareviewuser.LookupValue : "",
+                    areviewuser_to_id = (oListItem["areviewuser"] != null) ? fuvareviewuser.LookupId.ToString() : "",
                     Modified_By = (oListItem["Editor"] != null) ? fuvEditor.LookupValue : "",
                     Modified_By_id = (oListItem["Editor"] != null) ? fuvEditor.LookupId.ToString() : "",
                     Created_By = (oListItem["Author"] != null) ? fuvAuthor.LookupValue : "",
@@ -1412,8 +2099,12 @@ namespace SPPipAPi.Controllers
                 string strADUserApiURL = strADUserURL + "/ADAddUser";
                 HttpResponseMessage Res = client.PostAsync(strADUserApiURL, content).Result;
                 var result = Res.Content.ReadAsStringAsync();
+                if (result.Result.Contains("already exists"))
+                    return getHttpResponseMessage("already exists");
+                else
+                    return getHttpResponseMessage("success");
             }
-            return getHttpResponseMessage("success");
+            //return getHttpResponseMessage(result.ToString());
         }
 
 
@@ -1641,6 +2332,110 @@ namespace SPPipAPi.Controllers
 
         }
 
+        /*public async Task<string> WebServiceAsync(int id)
+        {
+            var client = new HttpClient
+            {
+                BaseAddress =
+                new Uri(WebServiceAddress)
+            };
+            string json = await client.GetStringAsync(id.ToString());
+            var result = JsonConvert.DeserializeObject<string>(json);
+            return result;
+        }
+       
+        [System.Web.Http.Route("api/SupliPipflow/AsyncBulkPushAPIS")]
+        [System.Web.Http.HttpPost]
+        public async Task<HttpResponseMessage>  AsyncBulkPushAPIS(List<BulkpushAPIS> models)
+        {
+            ClientContext clientContext = new ClientContext(strSiteURL);
+            clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
+
+            //Get the list items from list
+            SP.List oList = clientContext.Web.Lists.GetByTitle("bulkpushapis");
+            ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
+
+
+            foreach (BulkpushAPIS BulkAPI in models)
+            {
+                // prepare site connection               
+
+                try
+                {
+                    ListItem oItem = oList.AddItem(oListItemCreationInformation);
+                    oItem["Title"] = BulkAPI.Title;
+                    oItem["pushurl"] = BulkAPI.url;
+                    oItem["callbackurl"] = BulkAPI.callbackurl;
+                    oItem.Update();
+                    //clientContext.Load(oItem);
+                    
+                    clientContext.ExecuteQuery();
+                }
+                catch (Exception ex)
+                {
+
+                    return getErrormessage(ex.Message);
+                }
+
+            }
+            return await getSuccessmessage("Success");
+        }*/
+        [System.Web.Http.Route("api/SupliPipflow/VersionList")]
+        [System.Web.Http.HttpGet]
+        public HttpResponseMessage VersionList()
+        {
+            string strData = "";
+            using (ClientContext ctx = new ClientContext(strSiteURL))
+            {
+                CamlQuery camlQuery = new CamlQuery();
+                Web web = ctx.Web;
+                ctx.Load(web, w => w.ServerRelativeUrl, w => w.Lists);
+                List list = web.Lists.GetByTitle(cPipflowListName);
+                ctx.Load(list);
+                ListItemCollection itemColl = list.GetItems(camlQuery);
+                ctx.Load(itemColl);
+                ctx.ExecuteQuery();
+                foreach (ListItem item in itemColl)
+                {
+                    SP.File fileVersion = web.GetFileByServerRelativeUrl(web.ServerRelativeUrl + "/Lists/" + list.Title + "/" + item.Id + "_.000");
+                    ctx.Load(fileVersion);
+                    SP.FileVersionCollection fileVersionCollection = fileVersion.Versions;
+                    ctx.Load(fileVersionCollection);
+                    ctx.ExecuteQuery();
+                    foreach (var version in fileVersion.Versions)
+                    {
+                        string versionValue = string.Empty;
+                        /*  if (version.FieldValues["FieldName"] != null)
+                          {
+                               versionValue = version.FieldValues["FieldName"].ToString();
+                          }*/
+                    }
+
+
+                    for (int iVersionCount = 0; iVersionCount < fileVersionCollection.Count; iVersionCount++)
+                    {
+                        SP.FileVersion version = fileVersionCollection[iVersionCount];
+                        //  strData += version.ToString();
+
+                        // strData += version.CreatedBy.Title;
+                        strData += version.CheckInComment;
+                        strData += version.Created.ToShortDateString() + " " +
+                                         version.Created.ToShortTimeString();
+                        strData += item.Id.ToString();
+                        strData += version.VersionLabel;
+                        strData += version.IsCurrentVersion;
+                        // strData += version.SPFieldValues["Title"].ToString();
+                        //fileVersionCollection.DeleteByID(version.ID);
+                        //  ListItem oldItem = version.attr;
+                        // ctx.Load(oldItem);
+                        // ctx.ExecuteQuery();
+                    }
+                    ctx.ExecuteQuery();
+                }
+            }
+            return getSuccessmessage(strData);
+        }
+
         [System.Web.Http.Route("api/SupliPipflow/BulkPushAPIS")]
         [System.Web.Http.HttpPost]
         public HttpResponseMessage BulkPushAPIS(List<BulkpushAPIS> models)
@@ -1662,6 +2457,7 @@ namespace SPPipAPi.Controllers
                     ListItem oItem = oList.AddItem(oListItemCreationInformation);
                     oItem["Title"] = BulkAPI.Title;
                     oItem["pushurl"] = BulkAPI.url;
+                    oItem["callbackurl"] = BulkAPI.callbackurl;
                     oItem.Update();
                     //clientContext.Load(oItem);
                     clientContext.ExecuteQuery();
@@ -1676,7 +2472,17 @@ namespace SPPipAPi.Controllers
             return getSuccessmessage("Success");
         }
 
-
+        public string Get()
+        {
+            return "Welcome To Web API";
+        }
+        public List<string> Get(int Id)
+        {
+            return new List<string> {
+                "Data1",
+                "Data2"
+            };
+        }
 
 
     }

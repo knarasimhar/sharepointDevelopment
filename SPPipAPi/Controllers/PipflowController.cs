@@ -33,6 +33,10 @@ namespace SPPipAPi.Controllers
         string SITE_API_URL = "";
         string strDomainName = ConfigurationManager.AppSettings["DomainName"].ToString();
         Boolean isWait = false;
+
+        string cPipflowListName = "pipflow1";
+        string cPipdeptListName = "pipdept";
+        string cWfListName = "Workflow Tasks";
         public PipflowController()
         {
             if (ConfigurationManager.AppSettings["SITE_URL"] != null)
@@ -205,6 +209,8 @@ namespace SPPipAPi.Controllers
                         item => item["remarks"],
                         item => item["Editor"],
                         item => item["Author"],
+                         item => item["Created"],
+                        item => item["Modified"],
                         item => item["FY"],
                            item => item["fmrtype"],
                           item => item["stateid"],
@@ -259,8 +265,8 @@ namespace SPPipAPi.Controllers
                                 strLookupAssignTOvalues += FUV.LookupValue + ",";
                             }
                         }
-                      // new code implemented for eliminate the task geranration time 
-                      //  string currentTaskID = getCurrentTaskIDofFMR(oListItem.Id.ToString(), strLookupAssignTOIds);
+                        // new code implemented for eliminate the task geranration time 
+                        //  string currentTaskID = getCurrentTaskIDofFMR(oListItem.Id.ToString(), strLookupAssignTOIds);
                         respmsg.Add(new fmrlist
                         {
                             id = oListItem.Id.ToString(),
@@ -275,8 +281,10 @@ namespace SPPipAPi.Controllers
                             currenttaskid = (oListItem["currenttaskid"] != null) ? oListItem["currenttaskid"].ToString() : "",
                             Modified_By = (oListItem["Editor"] != null) ? fuvEditor.LookupValue : "",
                             Modified_By_id = (oListItem["Editor"] != null) ? fuvEditor.LookupId.ToString() : "",
+                            Modified = (oListItem["Modified"] != null) ? oListItem["Modified"].ToString() : "",
                             Created_By = (oListItem["Author"] != null) ? fuvAuthor.LookupValue : "",
                             Created_By_id = (oListItem["Author"] != null) ? fuvAuthor.LookupId.ToString() : "",
+                            Created = (oListItem["Created"] != null) ? oListItem["Created"].ToString() : "",
                             currentassign_to = (oListItem["currentAssignee"] != null) ? strLookupValues.TrimEnd(',') : "",
                             currentassign_to_id = (oListItem["currentAssignee"] != null) ? strLookupIDS.TrimEnd(',') : ""
                         });
@@ -302,17 +310,17 @@ namespace SPPipAPi.Controllers
         }
 
 
-        private string getCurrentTaskIDofFMR(string FMRID,string Userid)
+        private string getCurrentTaskIDofFMR(string FMRID, string Userid)
         {
-           
+
             CamlQuery camlQuery = new CamlQuery();
             //camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
             // camlQuery.ViewXml = string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='ParentID'/><Value Type='Counter'>{0}</Value></Eq></Where></Query></View>", _parentID);
             // camlQuery.ViewXml = string.Format("<View><Query><Where><In><FieldRef Name='RelatedItems'/><Value Type='Number'>{0}</Value></In></Where></Query></View>", ReleatedItems);
-             camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRef Name='Status'/><Value Type='Choice'>Not Started</Value></Eq>" 
-                                                +  "<Eq><FieldRef Name='AssignedTo'/><Value Type='UserMulti'>{0}</Value></Eq><Contains><FieldRef Name='RelatedItems'/><Value Type='Text'>:{1},</Value></Contains>" 
-                                                 +  "</Where></Query></View>", Userid.TrimEnd(','),FMRID);
-           
+            camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRef Name='Status'/><Value Type='Choice'>Not Started</Value></Eq>"
+                                               + "<Eq><FieldRef Name='AssignedTo'/><Value Type='UserMulti'>{0}</Value></Eq><Contains><FieldRef Name='RelatedItems'/><Value Type='Text'>:{1},</Value></Contains>"
+                                                + "</Where></Query></View>", Userid.TrimEnd(','), FMRID);
+
             // camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRefName='Status'/><ValueType='Choice'>Not Started</Value></Eq></Where></Query></View>", Userid);
 
             ClientContext clientContext = new ClientContext(strSiteURL);
@@ -323,7 +331,7 @@ namespace SPPipAPi.Controllers
                 clientContext.Load(web);
                 //  var tasks;
                 // clientContext.Load(tasks, c => c.Where(t => t.Parent != null && t.Parent.Id == parentId));
-                List list = web.Lists.GetByTitle("Workflow Tasks");
+                List list = web.Lists.GetByTitle(cWfListName);
                 ListItemCollection olists = list.GetItems(camlQuery);
                 // Console.WriteLine("List ID::  " + list.Id);
                 clientContext.Load(olists,
@@ -334,12 +342,12 @@ namespace SPPipAPi.Controllers
                 clientContext.ExecuteQuery();
                 foreach (ListItem oListItem in olists)
                 {
-                    if (oListItem["RelatedItems"]!=null && oListItem["RelatedItems"].ToString() != "")
+                    if (oListItem["RelatedItems"] != null && oListItem["RelatedItems"].ToString() != "")
                     {
 
                         List<RelatedItemFieldValue> obj = JsonConvert.DeserializeObject<List<RelatedItemFieldValue>>(oListItem["RelatedItems"].ToString());
                         if (obj != null)
-                          if(FMRID == obj[0].ItemId.ToString())
+                            if (FMRID == obj[0].ItemId.ToString())
                                 return oListItem.Id.ToString();
                     }
 
@@ -375,7 +383,7 @@ namespace SPPipAPi.Controllers
 
 
 
-                List oList = clientContext.Web.Lists.GetByTitle("pipflow1");
+                List oList = clientContext.Web.Lists.GetByTitle(cPipflowListName);
 
                 ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
                 ListItem oListItem = oList.AddItem(itemCreateInfo);
@@ -433,7 +441,7 @@ namespace SPPipAPi.Controllers
                 if (Listname != "")
                     oList = clientContext.Web.Lists.GetByTitle(Listname);
                 else
-                    oList = clientContext.Web.Lists.GetByTitle("pipflow1");
+                    oList = clientContext.Web.Lists.GetByTitle(cPipflowListName);
 
                 ListItem targetListItem = oList.GetItemById(fmrSPid);
 
@@ -578,7 +586,7 @@ namespace SPPipAPi.Controllers
 
 
                 //Get the list items from list
-                SP.List oList = clientContext.Web.Lists.GetByTitle("Workflow Tasks");
+                SP.List oList = clientContext.Web.Lists.GetByTitle(cWfListName);
                 SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
                 User createuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(createdby));
                 User assignuser = null;
@@ -817,13 +825,13 @@ namespace SPPipAPi.Controllers
 
 
 
-              
+
                 User createuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(createdby));
                 User assignuser = null;
                 clientContext.Load(createuser);
-          
+
                 //Get the list items from list
-                SP.List oList = clientContext.Web.Lists.GetByTitle("Workflow Tasks");
+                SP.List oList = clientContext.Web.Lists.GetByTitle(cWfListName);
                 SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
                 int i = 0;
                 FieldUserValue[] userValueCollection;
@@ -911,7 +919,7 @@ namespace SPPipAPi.Controllers
                     list2.Update();
                     clientContext.ExecuteQuery();
 
-                    spsetAddorupdteItemByID("", "pipflow1", "", "", SPFmrID, "", taskid, createdby, AssignedTo);
+                    spsetAddorupdteItemByID("", cPipflowListName, "", "", SPFmrID, "", taskid, createdby, AssignedTo);
                 }
 
                 if (areviewuserTo != null && areviewuserTo != "" && (TASKTYPE == "2" || TASKTYPE == "3"))
@@ -1027,6 +1035,11 @@ namespace SPPipAPi.Controllers
         [HttpGet, HttpPost]
         public HttpResponseMessage spsetTaskItemByID(string status, string percentComplete, string Comments, string createdby, string taskid, string assignevent = "", string AssignedTo = "", string areviewuserTo = "", string SPFmrID = "", string TASKTYPE = "", string callbackurl = "")
         {
+
+            if (ConfigurationManager.AppSettings["IS_SINGLE_TASK"] != null && ConfigurationManager.AppSettings["IS_SINGLE_TASK"].ToString().ToUpper() == "Y")
+            {
+                return spsetTaskItemByID_New(status,percentComplete,Comments,createdby,taskid,assignevent,AssignedTo,areviewuserTo,SPFmrID,TASKTYPE,callbackurl);
+            }
             // prepare site connection
             string strcallbackurl = callbackurl;
             ClientContext clientContext = new ClientContext(strSiteURL);
@@ -1034,7 +1047,7 @@ namespace SPPipAPi.Controllers
             if (AssignedTo == null) AssignedTo = "";
             if (percentComplete == null) percentComplete = "1";
             if (TASKTYPE == null) TASKTYPE = "1";
-         
+
             try
             {
 
@@ -1064,12 +1077,12 @@ namespace SPPipAPi.Controllers
                     taskid = getCurrentTaskIDofFMR(SPFmrID, createuser.Id.ToString());
 
                 //Get the list items from list
-                SP.List oList = clientContext.Web.Lists.GetByTitle("Workflow Tasks");
+                SP.List oList = clientContext.Web.Lists.GetByTitle(cWfListName);
 
                 SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
-               
+
                 int i = 0;
-               
+
                 // if assignedTo is null its related to sub task only 
                 if (AssignedTo != "")
                 {
@@ -1288,11 +1301,11 @@ namespace SPPipAPi.Controllers
                //string id = xdoc.SelectSingleNode(@"ns:feed/ns:entry/ns:content/ns:m:properties");
                // xdoc.GetElementById("m:type")
                //update latest taskid to fmr current taskid field
-               spsetAddorupdteItemByID("", "pipflow1", "","",strRelID,"",strTaskID);*/
+               spsetAddorupdteItemByID("", cPipflowListName, "","",strRelID,"",strTaskID);*/
             List<pipflow> pipfs = JsonConvert.DeserializeObject<List<pipflow>>(strResp);
             foreach (pipflow pipf in pipfs)
             {
-                spsetAddorupdteItemByID("", "pipflow1", "", "", pipf.RelatedItems, "", pipf.id); break;
+                spsetAddorupdteItemByID("", cPipflowListName, "", "", pipf.RelatedItems, "", pipf.id); break;
             }
             return;
 
@@ -1445,7 +1458,7 @@ namespace SPPipAPi.Controllers
 
                 Web web = clientContext.Web;
                 clientContext.Load(web);
-                List list = web.Lists.GetByTitle("pipdept");
+                List list = web.Lists.GetByTitle(cPipdeptListName);
 
                 clientContext.ExecuteQuery();
 
@@ -1628,14 +1641,14 @@ namespace SPPipAPi.Controllers
                 clientContext.Load(web);
 
 
-                List list = web.Lists.GetByTitle("Workflow Tasks");
+                List list = web.Lists.GetByTitle(cWfListName);
 
 
                 ListItem targetListItem = list.GetItemById(ListitemId);
                 clientContext.Load(list);
                 clientContext.Load(targetListItem);
                 clientContext.ExecuteQuery();
-                // GetDoucmentHistory(pathValue, "Workflow Tasks",int.Parse(ListitemId));
+                // GetDoucmentHistory(pathValue, cWfListName,int.Parse(ListitemId));
                 //GetVersionsPageInfo(pathValue, clientContext.Credentials, list.Id, targetListItem.Id);
                 if (Vfieldname == "comments")
                 {
@@ -1772,7 +1785,7 @@ namespace SPPipAPi.Controllers
                 clientContext.Load(web);
                 //  var tasks;
                 // clientContext.Load(tasks, c => c.Where(t => t.Parent != null && t.Parent.Id == parentId));
-                List list = web.Lists.GetByTitle("Workflow Tasks");
+                List list = web.Lists.GetByTitle(cWfListName);
                 ListItemCollection olists = list.GetItems(camlQuery);
                 // Console.WriteLine("List ID::  " + list.Id);
                 clientContext.Load(olists,
@@ -1781,7 +1794,8 @@ namespace SPPipAPi.Controllers
                         item => item["Title"],
                         item => item["TaskOutcome"],
                          item => item["RelatedItems"],
-
+                           item => item["Created"],
+                             item => item["Modified"],
                         item => item["Status"],
                         item => item["AssignedTo"],
                         item => item["approveduser"],
@@ -1871,7 +1885,9 @@ namespace SPPipAPi.Controllers
                         Modified_By_id = (oListItem["Editor"] != null) ? fuvEditor.LookupId.ToString() : "",
                         Created_By = (oListItem["Author"] != null) ? fuvAuthor.LookupValue : "",
                         Created_By_id = (oListItem["Author"] != null) ? fuvAuthor.LookupId.ToString() : "",
-                        tasktype = (oListItem["tasktype"] != null) ? oListItem["tasktype"].ToString() : ""
+                        tasktype = (oListItem["tasktype"] != null) ? oListItem["tasktype"].ToString() : "",
+                        Created = (oListItem["Created"] != null) ? oListItem["Created"].ToString() : "",
+                        Modified = (oListItem["Modified"] != null) ? oListItem["Modified"].ToString() : ""
 
 
                     });
@@ -1913,7 +1929,7 @@ namespace SPPipAPi.Controllers
             clientContext.Load(web);
             //  var tasks;
             // clientContext.Load(tasks, c => c.Where(t => t.Parent != null && t.Parent.Id == parentId));
-            List list = web.Lists.GetByTitle("Workflow Tasks");
+            List list = web.Lists.GetByTitle(cWfListName);
             ListItemCollection olists = list.GetItems(camlQuery);
             // Console.WriteLine("List ID::  " + list.Id);
             clientContext.Load(olists,
@@ -1930,7 +1946,10 @@ namespace SPPipAPi.Controllers
                     item => item["Editor"],
                     item => item["Author"],
                      item => item["tasktype"],
-                      item => item["ParentID"]));
+                      item => item["ParentID"],
+                        item => item["Created"],
+                             item => item["Modified"]
+                      ));
             clientContext.ExecuteQuery();
             foreach (ListItem oListItem in olists)
             {
@@ -2013,8 +2032,9 @@ namespace SPPipAPi.Controllers
                     Created_By = (oListItem["Author"] != null) ? fuvAuthor.LookupValue : "",
                     Created_By_id = (oListItem["Author"] != null) ? fuvAuthor.LookupId.ToString() : "",
                     tasktype = (oListItem["tasktype"] != null) ? oListItem["tasktype"].ToString() : "",
-                    ParentID = (oListItem["ParentID"] != null) ? fuvParentID.LookupValue.ToString() : ""
-
+                    ParentID = (oListItem["ParentID"] != null) ? fuvParentID.LookupValue.ToString() : "",
+                    Created = (oListItem["Created"] != null) ? oListItem["Created"].ToString() : "",
+                    Modified = (oListItem["Modified"] != null) ? oListItem["Modified"].ToString() : ""
 
                 });
 
@@ -2386,7 +2406,7 @@ namespace SPPipAPi.Controllers
                 CamlQuery camlQuery = new CamlQuery();
                 Web web = ctx.Web;
                 ctx.Load(web, w => w.ServerRelativeUrl, w => w.Lists);
-                List list = web.Lists.GetByTitle("pipflow1");
+                List list = web.Lists.GetByTitle(cPipflowListName);
                 ctx.Load(list);
                 ListItemCollection itemColl = list.GetItems(camlQuery);
                 ctx.Load(itemColl);

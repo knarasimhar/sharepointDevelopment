@@ -18,9 +18,14 @@ namespace SPPipAPi.Models
         public string Modified_By { get; set; }
 
         public string Modified_By_id { get; set; }
+
+        public string Modified { get; set; }
         public string Created_By { get; set; }
 
         public string Created_By_id { get; set; }
+
+        public string Created { get; set; }
+
 
         public string assigned_to { get; set; }
 
@@ -54,16 +59,17 @@ namespace SPPipAPi.Models
         public string RelatedItems { get; set; }
 
         public string Modified_By { get; set; }
-
+       
         public string Modified_By_id { get; set; }
+        public string Modified { get; set; }
         public string Created_By { get; set; }
-
+        
         public string Created_By_id { get; set; }
-
+        public string Created { get; set; }
         public string assigned_to { get; set; }
 
         public string assigned_to_id { get; set; }
-        public string Modified_Date { get; set; }
+
 
         public string currentassign_to_id { get; set; }
         public string currentassign_to { get; set; }
