@@ -98,3 +98,19 @@ https://docs.microsoft.com/en-us/shar...
 # sahrepoint manager app from visual sutdio best link
 https://www.youtube.com/watch?v=xBkikKlOIgE&t=5103s
 # end 
+
+# start DB maintanace for SHAREPOINT help its very imported
+note: we stucked the application because of index rebuilding job not running daily in sharepoint server DB
+
+Below links very helpfull to do this :
+  
+  https://www.mssqltips.com/sqlservertip/4331/sql-server-index-fragmentation-overview/
+  
+  https://techcommunity.microsoft.com/t5/core-infrastructure-and-security/sharepoint-database-maintenance-recommendations/ba-p/323370
+  
+  -- increase work flow performance
+  
+  https://www.cloudsecuritea.com/2015/04/increase-sharepoint-workflow-performance-and-reliability/  
+# end 
+
+
