@@ -48,7 +48,7 @@ namespace SPPipAPi.Models
         public string stateid { get; set; }
     }
 
-        public class pipflow
+    public class pipflow
     {
         public string id { get; set; }
         public string title { get; set; }
@@ -59,11 +59,11 @@ namespace SPPipAPi.Models
         public string RelatedItems { get; set; }
 
         public string Modified_By { get; set; }
-       
+
         public string Modified_By_id { get; set; }
         public string Modified { get; set; }
         public string Created_By { get; set; }
-        
+
         public string Created_By_id { get; set; }
         public string Created { get; set; }
         public string assigned_to { get; set; }
@@ -79,11 +79,11 @@ namespace SPPipAPi.Models
 
         public string areviewuser_to_id { get; set; }
         public string areviewuser_to { get; set; }
-      
+
 
         public string tasktype { get; set; }
 
-       
+
         public string ParentID { get; set; }
 
 
