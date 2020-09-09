@@ -113,4 +113,8 @@ Below links very helpfull to do this :
   https://www.cloudsecuritea.com/2015/04/increase-sharepoint-workflow-performance-and-reliability/  
 # end 
 
+# performance toon start below link for disable distributed cache
 
+https://manojssharepointblog.wordpress.com/2013/05/29/start-and-stop-the-distributed-cache-service-in-sharepoint-2013/
+
+# end
