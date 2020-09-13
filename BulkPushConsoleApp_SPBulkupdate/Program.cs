@@ -28,10 +28,10 @@ namespace BulkPushConsoleApp
        
 
         static string cPipflowListName = "pipflow1";
-       // static string cPipdeptListName = "pipdept";
-        static string cWfListName = "workflow_history";
+      
         static string cWfHListName = "workflow_history";
-
+        static string stateids = "",FMRStatus="-1" ,wfhstatus="-2" ,FMRSuccessStatus="9", FMRFailStatus = "-9",
+                      wfhSuccessstatus = "4", wfhFailsstatus = "-4", CallbackStatus = "5", CallbackFailStatus = "-5";
        // ClientContext BulkclientContext;
 
         
@@ -47,6 +47,23 @@ namespace BulkPushConsoleApp
                 strPWD = ClsGeneral.getConfigvalue("SITE_URL_PWD");
             if (ClsGeneral.getConfigvalue("AD_USER_URL") != "")
                 strADUserURL = ClsGeneral.getConfigvalue("AD_USER_URL");
+            if (ClsGeneral.getConfigvalue("ISSUPLIMENTARY").ToLower() != "y")
+            {
+                cPipflowListName = "Spipflow1";
+                cWfHListName = "Sworkflow_history";
+
+                FMRStatus = "-s1"; wfhstatus = "-s2"; FMRSuccessStatus = "s9" ; FMRFailStatus = "-s9";
+                wfhSuccessstatus = "s4"; wfhFailsstatus = "-s4"; CallbackStatus = "s5"; CallbackFailStatus = "-s5";
+            }
+
+            if (ClsGeneral.getConfigvalue("stateids").ToLower() !="")
+            {
+                stateids = ClsGeneral.getConfigvalue("stateids");
+
+            }
+
+            
+
             /* ThreadStart thread = new ThreadStart(spgetListItemByID);
              Thread myThread = new Thread(thread);
 
@@ -59,7 +76,7 @@ namespace BulkPushConsoleApp
              }
 
              Console.ReadKey();*/
-          
+
             spgetListItemByID().GetAwaiter().GetResult();
 
         }
@@ -198,7 +215,7 @@ namespace BulkPushConsoleApp
                 clientContext.Load(createuser);
 
                 //Get the list items from list
-                SP.List oList = clientContext.Web.Lists.GetByTitle(cWfListName);
+                SP.List oList = clientContext.Web.Lists.GetByTitle(cWfHListName);
                 SP.ListItem list2 = oList.GetItemById(Int32.Parse(taskid));
                
                 list2["Status"] = status;
@@ -681,8 +698,8 @@ namespace BulkPushConsoleApp
                 foreach (BulkpushAPIS resp in respmsg)
                 {
 
-                    //-1 For new FMR creating
-                    if (resp.status == "-1")
+                    //-1 For new FMR creating 
+                    if (resp.status == FMRStatus)
                     {
                         try
 
@@ -690,7 +707,7 @@ namespace BulkPushConsoleApp
                             Console.WriteLine("ID:" + resp.Id + " Bulk push veriffication:" + i.ToString());
                             ListItem targetListItem = list.GetItemById(resp.Id);
                             //  targetListItem["pushurl"] = resp.url.ToString().Replace("sppipapitestlocal", "sppipapitesting");
-                             targetListItem["status"] = "4";
+                             targetListItem["status"] = FMRSuccessStatus;
                             //targetListItem["Title"] = resp.url;
                             targetListItem["log"] = "Bulk push veriffication :" + i.ToString();
                             var uri = new Uri(resp.url);
@@ -702,18 +719,24 @@ namespace BulkPushConsoleApp
                                  QueryParam = QueryParams[0];
 
                                  if (QueryParam.stateid != null) stateid = QueryParam.stateid.Value;
-                                if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
-                              
 
-                                spsetFMRDBBulk(QueryParam.fmrid.Value, QueryParam.remarks.Value, "", ref BulkclientContext, QueryParam.assignedto.Value, QueryParam.fy.Value, stateid, QueryParam.fmrtype.Value, roleid);
-                               // oItem["pushurl"] = BulkAPI.callbackurl; 
+                                if (stateids!="" && !stateid.Contains(stateids)) continue;
+                                if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
+
+                                try
+                                {
+                                    spsetFMRDBBulk(QueryParam.fmrid.Value, QueryParam.remarks.Value, "", ref BulkclientContext, QueryParam.assignedto.Value, QueryParam.fy.Value, stateid, QueryParam.fmrtype.Value, roleid);
+                                }
+                                catch(Exception ex) { targetListItem["status"] = FMRFailStatus; targetListItem["log"] = ex.Message; }
+                                    // oItem["pushurl"] = BulkAPI.callbackurl; 
                                 targetListItem.Update();
                             clientContext.Load(targetListItem);
                                 i++;
                             }
                           
                         }
-                        catch { }
+                        catch
+                        { }
                     
                     if (i % QueueLength == 0)
                     {
@@ -754,7 +777,7 @@ namespace BulkPushConsoleApp
                     }
                    
                     // 0 for Single task creation next level
-                    else if (resp.status == "-2")
+                    else if (resp.status == wfhstatus)
                     {
                         try
 
@@ -762,7 +785,7 @@ namespace BulkPushConsoleApp
                             Console.WriteLine("ID:" + resp.Id + " Bulk push veriffication:" + j.ToString());
                             ListItem targetListItem = list.GetItemById(resp.Id);
                             //  targetListItem["pushurl"] = resp.url.ToString().Replace("sppipapitestlocal", "sppipapitesting");
-                            targetListItem["status"] = "6";
+                            targetListItem["status"] = CallbackStatus;
                             //targetListItem["Title"] = resp.url;
                             targetListItem["log"] = "Bulk push veriffication :" + j.ToString();
                             var uri = new Uri(resp.url);
@@ -776,8 +799,11 @@ namespace BulkPushConsoleApp
                                 if (QueryParam.stateid != null) stateid = QueryParam.stateid.Value;
                                 if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
 
-                                spsetTaskItemByID_New(QueryParam.status.Value, QueryParam.percentcomplete.Value, QueryParam.comments.Value, QueryParam.createdby.Value, QueryParam.taskid.Value, ref BulkclientContext, ref PreHistBulkclientContext, ref UPdateFMRBulkclientContext, QueryParam.assignevent.Value, QueryParam.assignedto.Value, QueryParam.areviewuserto.Value , QueryParam.spfmrid.Value, QueryParam.tasktype.Value, stateid, roleid);
-                               
+                                try
+                                {
+                                    spsetTaskItemByID_New(QueryParam.status.Value, QueryParam.percentcomplete.Value, QueryParam.comments.Value, QueryParam.createdby.Value, QueryParam.taskid.Value, ref BulkclientContext, ref PreHistBulkclientContext, ref UPdateFMRBulkclientContext, QueryParam.assignevent.Value, QueryParam.assignedto.Value, QueryParam.areviewuserto.Value, QueryParam.spfmrid.Value, QueryParam.tasktype.Value, stateid, roleid);
+                                }
+                                catch (Exception ex) { targetListItem["status"] = wfhFailsstatus; targetListItem["log"] = ex.Message; }
                                 //oItem["pushurl"] = resp.callbackurl; 
                                 targetListItem.Update();
                             clientContext.Load(targetListItem);
@@ -887,7 +913,7 @@ namespace BulkPushConsoleApp
                        // Console.ReadLine();
                     }
                     // for callback url push from 6 to data
-                    else if (resp.status == "6")
+                    else if (resp.status == CallbackStatus)
                     {
                         ListItem targetListItem = list.GetItemById(resp.Id);
                         try
@@ -896,7 +922,7 @@ namespace BulkPushConsoleApp
                             Console.WriteLine("ID:" + resp.Id + " Call back request ");
 
                             //  targetListItem["pushurl"] = resp.url.ToString().Replace("sppipapitestlocal", "sppipapitesting");
-                            targetListItem["status"] = "1";
+                            targetListItem["status"] = wfhSuccessstatus;
                             //targetListItem["Title"] = resp.url;
                             targetListItem["log"] = "Bulk push veriffication from status 6 :";
                             var uri = new Uri(resp.url);
@@ -922,7 +948,7 @@ namespace BulkPushConsoleApp
                                 catch (Exception ex)
                                 {
                                     targetListItem["log"] = ex.Message;
-                                    targetListItem["status"] = "2";
+                                    targetListItem["status"] = CallbackFailStatus;
                                 }
                                 //spsetFMRDBBulk(QueryParam.fmrid.Value, QueryParam.remarks.Value, "", ref BulkclientContext, QueryParam.assignedto.Value, QueryParam.fy.Value, QueryParam.stateid.Value, QueryParam.fmrtype.Value, "");
                                 // oItem["pushurl"] = BulkAPI.callbackurl; 
