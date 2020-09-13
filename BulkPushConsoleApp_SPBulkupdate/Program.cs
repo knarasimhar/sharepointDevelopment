@@ -47,13 +47,13 @@ namespace BulkPushConsoleApp
                 strPWD = ClsGeneral.getConfigvalue("SITE_URL_PWD");
             if (ClsGeneral.getConfigvalue("AD_USER_URL") != "")
                 strADUserURL = ClsGeneral.getConfigvalue("AD_USER_URL");
-            if (ClsGeneral.getConfigvalue("ISSUPLIMENTARY").ToLower() != "y")
+            if (ClsGeneral.getConfigvalue("ISSUPLIMENTARY").ToLower() == "y")
             {
                 cPipflowListName = "Spipflow1";
                 cWfHListName = "Sworkflow_history";
 
-                FMRStatus = "-s1"; wfhstatus = "-s2"; FMRSuccessStatus = "s9" ; FMRFailStatus = "-s9";
-                wfhSuccessstatus = "s4"; wfhFailsstatus = "-s4"; CallbackStatus = "s5"; CallbackFailStatus = "-s5";
+                FMRStatus = "-3"; wfhstatus = "-4"; FMRSuccessStatus = "59" ; FMRFailStatus = "-59";
+                wfhSuccessstatus = "54"; wfhFailsstatus = "-54"; CallbackStatus = "55"; CallbackFailStatus = "-55";
             }
 
             if (ClsGeneral.getConfigvalue("stateids").ToLower() !="")

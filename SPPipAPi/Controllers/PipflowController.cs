@@ -2704,7 +2704,7 @@ namespace SPPipAPi.Controllers
                     ListItem oItem = oList.AddItem(oListItemCreationInformation);
                     oItem["Title"] = BulkAPI.Title;
                     oItem["pushurl"] = BulkAPI.url;
-                    if (ClsGeneral.getConfigvalue("REQESTFROM_API") != "Y")
+                    if (ClsGeneral.getConfigvalue("REQESTFROM_API").ToUpper() != "Y")
                     {
                         if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsetfmr?"))
                         {
