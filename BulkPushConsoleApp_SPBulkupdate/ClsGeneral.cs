@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.SharePoint.Client.Utilities;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 
@@ -8,15 +9,15 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text;
-using System.Web;
 
-namespace SPPipAPi.Models
+
+namespace BulkPushConsoleApp
 {
     public class ClsGeneral
     {
         public static string GetJsonStringFromQueryString(string queryString)
         {
-            var nvs = HttpUtility.ParseQueryString(queryString);
+            var nvs = System.Web.HttpUtility.ParseQueryString(queryString);
             var dict = nvs.AllKeys.ToDictionary(k => k, k => nvs[k]);
             return "[" + JsonConvert.SerializeObject(dict, new KeyValuePairConverter()) + "]";
         }
@@ -85,8 +86,8 @@ namespace SPPipAPi.Models
 
         public static String getConfigvalue(String key)
         {
-            if (ConfigurationManager.AppSettings[key] != null)
-                return ConfigurationManager.AppSettings[key];
+            if (ConfigurationSettings.AppSettings[key] != null)
+                return ConfigurationSettings.AppSettings[key];
             else
                 return "";
         }
