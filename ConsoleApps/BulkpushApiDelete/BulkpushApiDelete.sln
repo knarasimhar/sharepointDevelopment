@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BulkpushApiDelete", "BulkpushApiDelete\BulkpushApiDelete.csproj", "{B9083026-FD34-456A-9E46-3F77141B6E0E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B9083026-FD34-456A-9E46-3F77141B6E0E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9083026-FD34-456A-9E46-3F77141B6E0E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9083026-FD34-456A-9E46-3F77141B6E0E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9083026-FD34-456A-9E46-3F77141B6E0E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4D262C82-91D0-41D0-A588-73E62A7011A6}
+	EndGlobalSection
+EndGlobal
