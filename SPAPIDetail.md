@@ -241,6 +241,62 @@ http://localhost:56643/api/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrS
 live: http://52.172.200.35:2020/sppipapidev/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remarks={remarks}&status={status}
 # end 
 
+11.
+# For getting All state group by count based on status & roleids
+https://<IP>http://localhost:44359/api/Pipflow/getGroupbyStates?status=not%20started&roleids=5,11
+  
+  Method type : GET 
+  
+  Request parameters Mandatory:
+  
+             status: status of the task 'not started' or rejected or approved
+             roleids : roleids separate with , like 5,11, etc
+             
+             
+  Response output:
+ #    note: plz use stateid.COUNT.group for group count
+              success: { "Row" : 
+[{
+"stateid": "1",
+"stateid.": "1.00000000000000",
+"roleid": "5",
+"roleid.": "5.00000000000000",
+"stateid.urlencoded": "%3B%231%2E00000000000000%3B%23",
+"stateid.COUNT.group": "1326",
+"stateid.newgroup": "1",
+"stateid.groupindex": "1_",
+"roleid.urlencoded": "%3B%231%2E00000000000000%3B%235%2E00000000000000%3B%23",
+"roleid.COUNT.group2": "731",
+"roleid.newgroup": "1",
+"roleid.groupindex2": "1_"
+}
+,{
+"stateid": "1",
+"stateid.": "1.00000000000000",
+"roleid": "11",
+"roleid.": "11.0000000000000",
+"stateid.urlencoded": "%3B%231%2E00000000000000%3B%23",
+"stateid.COUNT.group": "1326",
+"stateid.newgroup": "",
+"stateid.groupindex": "1_",
+"roleid.urlencoded": "%3B%231%2E00000000000000%3B%2311%2E0000000000000%3B%23",
+"roleid.COUNT.group2": "595",
+"roleid.newgroup": "1",
+"roleid.groupindex2": "2_"
+}],"FirstRow" : 1,
+"LastRow" : 38
+,"FilterLink" : "?"
+,"ForceNoHierarchy" : "1"
+,"HierarchyHasIndention" : ""
+
+}    
+fail:  Error message
+Eg link: 
+http://localhost:56643/api/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remarks={remarks}&status={status}
+
+live: http://52.172.200.35:2020/sppipapidev/Pipflow/spupdateFMR?Listname={Listname}&fmrSPid={fmrSPid}&remarks={remarks}&status={status}
+# end 
+
 # Start Suplimentary only replace controller Pipflow to SupliPipflow
 SUPLIMENTARY FMRS same as above all APIS so plz note all signature with replace of controller Pipflow to SupliPipflow
 # END suplimentart

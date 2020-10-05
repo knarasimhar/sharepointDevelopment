@@ -24,6 +24,7 @@ using System.Xml.Linq;
 using System.Threading;
 using Microsoft.SharePoint;
 using Newtonsoft.Json.Linq;
+using System.Collections;
 
 namespace SPPipAPi.Controllers
 {
@@ -152,14 +153,15 @@ namespace SPPipAPi.Controllers
         [Route("api/Pipflow/spgetListByName")]
 
         [HttpGet, HttpPost]
-        public HttpResponseMessage spgetListByName(string Listname, string FY, string fmrtype, string stateid, string roleid, string status = "", string ListitemId = "")
+        public HttpResponseMessage spgetListByName(string Listname, string FY, string fmrtype, string stateid, string roleid = "", string status = "", string ListitemId = "")
         {
 
             // prepare site connection
             try
             {
                 // global parameters<View><Query>
-
+                if (ClsGeneral.getConfigvalue("FROM_SSOM_URL") != "")
+                    return getHttpResponseMessage(ClsGeneral.DoWebGetRequest(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/spgetListByName" + ControllerContext.Request.RequestUri.Query.ToString(),""));
 
 
                 string strCamlQuery_temp = "<View><Query><Where><And>!WHERE!</And></Where></Query></View>";
@@ -187,12 +189,15 @@ namespace SPPipAPi.Controllers
                 //  if (serarchCount == 0)
                 strCamlQuery = "<View><RowLimit>100000</RowLimit></View>";
 
-                camlQuery.ViewXml = "<View><Query><Where><And>" +
+                camlQuery.ViewXml = "<View><RowLimit>5000</RowLimit><Query><Where><And>" +
                               "<And><Eq><FieldRef Name='fmrtype' /><Value Type='Number'>" + fmrtype + "</Value></Eq>" +
-                              "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>" +
-                              "<And><Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>" +
-                              "<Eq><FieldRef Name='FY' /><Value Type='Text'>" + FY + "</Value></Eq></And>" +
-                              "</And></Where></Query></View>";
+                              "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>";
+                if(roleid!="")
+                camlQuery.ViewXml += "<And><Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                camlQuery.ViewXml += "<Eq><FieldRef Name='FY' /><Value Type='Text'>" + FY + "</Value></Eq>";
+                if (roleid != "")
+                    camlQuery.ViewXml += "</And>";
+                   camlQuery.ViewXml += "</And></Where></Query></View>";
                 //camlQuery.ViewXml = strCamlQuery;
 
 
@@ -623,7 +628,7 @@ namespace SPPipAPi.Controllers
             // prepare site connection
             string strcallbackurl = callbackurl;
             ClientContext clientContext = new ClientContext(strSiteURL);
-            clientContext.Credentials = new NetworkCredential("spm", "pip@123");
+            clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
             if (AssignedTo == null) AssignedTo = "";
             if (percentComplete == null) percentComplete = "1";
             if (TASKTYPE == null) TASKTYPE = "1";
@@ -862,7 +867,7 @@ namespace SPPipAPi.Controllers
             // prepare site connection
             string strcallbackurl = callbackurl;
             ClientContext clientContext = new ClientContext(strSiteURL);
-            clientContext.Credentials = new NetworkCredential("spm", "pip@123");
+            clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
             if (AssignedTo == null) AssignedTo = "";
             if (percentComplete == null) percentComplete = "1";
             if (TASKTYPE == null) TASKTYPE = "1";
@@ -1081,7 +1086,7 @@ namespace SPPipAPi.Controllers
         private void setPreviousTaskHistory(ref SP.ListItem _list2History, string SPFmrID, string taskid, string Status)
         {
             ClientContext clientContext = new ClientContext(strSiteURL);
-            clientContext.Credentials = new NetworkCredential("spm", "pip@123");
+            clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
             List oList = clientContext.Web.Lists.GetByTitle("workflow_history");
 
             ListItemCreationInformation itemCreateInfo = new ListItemCreationInformation();
@@ -1127,7 +1132,7 @@ namespace SPPipAPi.Controllers
             // prepare site connection
             string strcallbackurl = callbackurl;
             ClientContext clientContext = new ClientContext(strSiteURL);
-            clientContext.Credentials = new NetworkCredential("spm", "pip@123");
+            clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
             if (AssignedTo == null) AssignedTo = "";
             if (percentComplete == null) percentComplete = "1";
             if (TASKTYPE == null) TASKTYPE = "1";
@@ -1663,7 +1668,7 @@ namespace SPPipAPi.Controllers
                 ListItemCollection items = list.GetItems(query);
                 ctx.Load(items);
 
-                ctx.Credentials = new NetworkCredential("spm", "pip@123");
+                ctx.Credentials = new NetworkCredential(strUSER, strPWD);
                 var file = ctx.Web.Lists.GetByTitle(listName).GetItemById(id).File;
                 var versions = file.Versions;
                 ctx.Load(file);
@@ -1721,7 +1726,7 @@ namespace SPPipAPi.Controllers
                 //<View><RowLimit>1000</RowLimit></View>
                 // prepare site connection
                 ClientContext clientContext = new ClientContext(strSiteURL);
-                clientContext.Credentials = new NetworkCredential("spm", "pip@123");
+                clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
 
 
                 Web web = clientContext.Web;
@@ -1849,6 +1854,9 @@ namespace SPPipAPi.Controllers
             // prepare site connection
             try
             {
+                if (ClsGeneral.getConfigvalue("FROM_SSOM_URL") != "")
+                    return getHttpResponseMessage(ClsGeneral.DoWebGetRequest(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/spgetTaskDetails" + ControllerContext.Request.RequestUri.Query.ToString(), ""));
+
                 if (TaskType == null) TaskType = "";
                 if (roleid == null) roleid = "";
                 if (stateid == null) stateid = "";
@@ -1869,7 +1877,7 @@ namespace SPPipAPi.Controllers
                 // prepare site connection
                 camlQuery.ViewXml = "<View><RowLimit>50000</RowLimit></View>";
 
-                camlQuery.ViewXml = "<View><Query><Where><And>";
+                camlQuery.ViewXml = "<View><RowLimit>5000</RowLimit><Query><Where><And>";
                 if (roleid != "")
                     camlQuery.ViewXml += "<And>";
                 camlQuery.ViewXml += "<Eq><FieldRef Name='tasktype' /><Value Type='Number'>" + TaskType + "</Value></Eq>" +
@@ -2708,29 +2716,12 @@ namespace SPPipAPi.Controllers
         [System.Web.Http.HttpPost]
         public HttpResponseMessage IOTBulkPushAPIS([FromBody] JToken postData, HttpRequestMessage request)
         {
-            // Initialization  
-            /*    HttpResponseMessage response = null;
-                RequestObj requestObj = JsonConvert.DeserializeObject<RequestObj>(postData.ToString());
-                DataTable responseObj = new DataTable();
-                string json = string.Empty;
+            if (ClsGeneral.getConfigvalue("FROM_SSOM_URL_INSERT") != "")
+                return getHttpResponseMessage(ClsGeneral.DoPostWebreqeust(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "api/Pipflow/IOTBulkPushAPIS" + ControllerContext.Request.RequestUri.Query.ToString(), JsonConvert.SerializeObject(postData)));
 
-                ...  
-                    // Loading Data.  
-    ...  
-                    // Processing.  
-    ...  
-                    // Settings.  
-                    json = JsonConvert.SerializeObject(responseObj);
-                response = Request.CreateResponse(HttpStatusCode.OK);
-                response.Content = new StringContent(json, Encoding.UTF8, "application/json");
-
-                ...  
-                // Info.  
-                return response;
-            */
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
-
+            
             //Get the list items from list
             SP.List oList = clientContext.Web.Lists.GetByTitle("bulkpushapis");
             ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
@@ -2744,15 +2735,71 @@ namespace SPPipAPi.Controllers
                 oItem["Title"] = "IOT DATA";
                 oItem["status"] = "-9";
                 oItem["pushurl"] = postData.ToString();
+               
+                string strLog = "";
+                //   List<IotDevice> iotDobj = new List<IotDevice>
 
+                double finalDistance=0,distance, ratio;
+                Hashtable _htDivices = new Hashtable();
+                List<IotDevice> obj = JsonConvert.DeserializeObject<List<IotDevice>>(postData.ToString());
+               
+                foreach (IotDevice sobj in obj)
+                {
+                    if (sobj.type.ToLower() == "gateway")
+                    { strLog = sobj.mac + ",gateway,"; break; }
 
+                }
+            
+                foreach (string strDevic in ClsGeneral.getConfigvalue("macs").Split(','))
+                {
+                      
+                    foreach (IotDevice sobj in obj)
+                    {
+                      
+                        if (sobj.mac == strDevic && sobj.ibeaconTxPower!=null)
+                        {
+                          
+                            ratio = double.Parse(sobj.rssi) * 1.0 / (double.Parse(sobj.ibeaconTxPower));
+                           // var distance = 0;
+                            if (ratio < 1.0)
+                            {
+                                 distance = Math.Pow(ratio, 10);
+                            }
+                            else
+                            {
+                                 distance = (0.89976) * Math.Pow(ratio, 7.7095) + 0.111;
+                               // return distance;
+                            }
+                           // double distance = Math.Pow(10, ((double.Parse(sobj.ibeaconTxPower) - double.Parse(sobj.rssi)) / (10 * 2)));
+                          //  strLog += sobj.mac + "," + Math.Round(distance,2).ToString() + ",";
+                            if (_htDivices.Contains(strDevic))
+                                _htDivices[strDevic] = double.Parse(_htDivices[strDevic].ToString()) + distance;
+                            else
+                                _htDivices.Add(strDevic, distance);
+
+                            if (_htDivices.Contains(strDevic + "_count"))
+                                _htDivices[strDevic + "_count"] = int.Parse(_htDivices[strDevic + "_count"].ToString()) + 1;
+                            else
+                                _htDivices.Add(strDevic + "_count", 1);
+                            // break;
+                        }
+                    }
+                    if (_htDivices.Contains(strDevic))
+                        finalDistance = Math.Round(double.Parse(_htDivices[strDevic].ToString()) / int.Parse(_htDivices[strDevic + "_count"].ToString()),2);
+                    strLog += strDevic + "," + finalDistance.ToString() + ",";
+                }
+                if (ClsGeneral.getConfigvalue("macs") != "")
+                    oItem["log"] = strLog;
+                else
+                    oItem["log"] = postData.ToString();
             }
             catch (Exception ex)
             {
                 oItem["pushurl"] = ex.Message;
                 // return getErrormessage(ex.Message);
             }
-            oItem.Update();
+           
+           oItem.Update();
             //clientContext.Load(oItem);
             clientContext.ExecuteQuery();
 
@@ -2765,6 +2812,12 @@ namespace SPPipAPi.Controllers
         [System.Web.Http.HttpPost]
         public HttpResponseMessage BulkPushAPIS(List<BulkpushAPIS> models)
         {
+
+
+            if (ClsGeneral.getConfigvalue("FROM_SSOM_URL_INSERT") != "")
+                return getHttpResponseMessage(ClsGeneral.DoPostWebreqeust(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/BulkPushAPIS" + ControllerContext.Request.RequestUri.Query.ToString(), JsonConvert.SerializeObject(models)));
+
+
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
 
@@ -2812,6 +2865,11 @@ namespace SPPipAPi.Controllers
                         else if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsettaskitembyid?"))
                         {
                             oItem["status"] = "-4";
+                        }
+                        else // direct web request all apps
+                        {
+                            oItem["status"] = "-6";
+                            oItem["log"] = "direct call";
                         }
                     }
                     //oItem["callbackurl"] = BulkAPI.callbackurl;

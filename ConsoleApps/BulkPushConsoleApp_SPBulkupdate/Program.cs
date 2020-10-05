@@ -158,6 +158,7 @@ namespace BulkPushConsoleApp
             {
                 uAssignedTo = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(AssignedTo));
                 oListItem["ry3a"] = uAssignedTo;
+                oListItem["currentAssignee"] = uAssignedTo;
             }
             oListItem["roleid"] = roleid;
             oListItem["FY"] = FY;
@@ -186,6 +187,7 @@ namespace BulkPushConsoleApp
             {
                 uAssignedTo = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(AssignedTo));
                 oListItem["Assigned_x0020_To"] = uAssignedTo;
+              
             }
             // oListItem["Assigned_x0020_To"] = uAssignedTo;
             oListItem["roleid"] = roleid;
@@ -280,6 +282,7 @@ namespace BulkPushConsoleApp
                                 clientContext.Load(assignuser);
                                 clientContext.ExecuteQuery();
                                 _userstable.Add(auser, assignuser.Id);
+                            
                             }
                         if (assignuser != null)
                         {
@@ -359,6 +362,10 @@ namespace BulkPushConsoleApp
                     clientContext.Load(list2);
                     // clientContext.ExecuteQuery();
                     // disable fmr  update
+                    if (i == 1)
+                    {
+                        spsetAddorupdteItemByID("", cPipflowListName, "", "", SPFmrID, "", taskid, ref UpdateFMRclientContext, stateid, roleid, createdby, AssignedTo);
+                    }
                     spsetAddorupdteItemByID("", cPipflowListName, "", "", SPFmrID, "", taskid, ref UpdateFMRclientContext, stateid, roleid, createdby, AssignedTo);
 
                     // update the previous history to other list workflow_history
@@ -418,8 +425,8 @@ namespace BulkPushConsoleApp
                         oItem["relateditem"] = SPFmrID;
                         oItem["Status"] = status;
                         oItem["TaskOutcome"] = "";
-                        list2["roleid"] = roleid;
-                        list2["stateid"] = stateid;
+                        oItem["roleid"] = roleid;
+                        oItem["stateid"] = stateid;
                         //  oItem["PercentComplete"] = 0;
                         oItem.Update();
                         clientContext.Load(oItem);
@@ -558,61 +565,81 @@ namespace BulkPushConsoleApp
                 if (CurAssignTo != "")
                 {
 
-                    int i = 0;
-                    FieldUserValue[] userValueCollection;
-                    // if assignedTo is null its related to sub task only 
-                    if (CurAssignTo != "")
-                    {
-                        userValueCollection = new FieldUserValue[CurAssignTo.Split(',').Length];
-                        //for multiple assigies should be send , separate paramers
-                        User assignuser;
-                        foreach (string auser in CurAssignTo.Split(','))
-                        {
-                            assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
-                            // for store and check from users hash table data
-                            if (_userstable[auser] == null)
-                            {
-                                clientContext.Load(assignuser);
-                                clientContext.ExecuteQuery();
-                                _userstable.Add(auser, assignuser.Id);
-                            }
-                           
-                            if (assignuser != null)
-                            {
+                     int i = 0;
+                      FieldUserValue[] CurAssignuserValueCollection;
+                      // if assignedTo is null its related to sub task only 
+                      if (CurAssignTo != "")
+                      {
+                        CurAssignuserValueCollection = new FieldUserValue[CurAssignTo.Split(',').Length];
+                          //for multiple assigies should be send , separate paramers
+                          User assignuser;
+                          foreach (string auser in CurAssignTo.Split(','))
+                          {
 
-                                FieldUserValue fieldUserVal = new FieldUserValue();
-                                fieldUserVal.LookupId = (int)_userstable[auser];
+                              // for store and check from users hash table data
+                              if (_userstable[auser] == null)
+                              {
+                                  assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
+                                  clientContext.Load(assignuser);
+                                  clientContext.ExecuteQuery();
+                                  _userstable.Add(auser, assignuser.Id);
+                                  FieldUserValue fieldUserVal = new FieldUserValue();
+                                  fieldUserVal.LookupId = assignuser.Id;
+                                CurAssignuserValueCollection.SetValue(fieldUserVal, i);
+                              }
+                             else if (_userstable[auser] != null)
+                              {
+
+                                  FieldUserValue fieldUserVal = new FieldUserValue();
+                                  fieldUserVal.LookupId = (int)_userstable[auser];
 
                                 //fieldUserVal.LookupValue = assignuser.LoginName;
 
-                                userValueCollection.SetValue(fieldUserVal, i);
-                                i++;
+                                CurAssignuserValueCollection.SetValue(fieldUserVal, i);
 
-                            }
 
-                        }
-                      
+                              }
+                              i++;
+                          }
 
-                        list2["currentAssignee"] = userValueCollection;
 
-                     
-                        //clientContext.ExecuteQuery();
-                    }
+                          list2["currentAssignee"] = CurAssignuserValueCollection;
 
+
+                          //clientContext.ExecuteQuery();
+                      }
+                     /* if (_userstable[CurAssignTo] == null)
+                      {
+                          User uAssignedTo = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(CurAssignTo));
+                          clientContext.Load(uAssignedTo);
+                          clientContext.ExecuteQuery();
+                          _userstable.Add(AssignTo, uAssignedTo.Id);
+                      }
+                      if (_userstable[CurAssignTo] != null)
+                      {
+                          FieldUserValue fieldUserVal = new FieldUserValue();
+                          fieldUserVal.LookupId = (int)_userstable[CurAssignTo];
+
+                          list2["currentAssignee"] = fieldUserVal;
+
+                      }
+                 */
+                   
                 }
 
                 if (AssignTo != "")
                 {
 
 
-                    User uAssignedTo = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(AssignTo));
+                  
                     if (_userstable[AssignTo] == null)
                     {
+                        User uAssignedTo = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(AssignTo));
                         clientContext.Load(uAssignedTo);
                         clientContext.ExecuteQuery();
                         _userstable.Add(AssignTo, uAssignedTo.Id);
                     }
-                    if (uAssignedTo != null)
+                    if (_userstable[AssignTo] != null)
                     {
                         FieldUserValue fieldUserVal = new FieldUserValue();
                         fieldUserVal.LookupId = (int)_userstable[AssignTo];
@@ -629,7 +656,7 @@ namespace BulkPushConsoleApp
                     list2["currenttaskid"] = Taskid;
                 list2["stateid"] = stateid;
                 list2["roleid"] = roleid;
-                // list2["Status"] = "Rejected";
+               // list2["Status"] = "Rejected";
                 // list2["TaskOutcome"] = "Rejected";
                 list2.Update();
                 clientContext.Load(list2);
@@ -650,7 +677,12 @@ namespace BulkPushConsoleApp
         {
             List<BulkpushAPIS> respmsg = new List<BulkpushAPIS>();
             string roleid = "0";
-            //string stateid = "19";
+           // string stateid = "8";
+            if (ClsGeneral.getConfigvalue("satewisemappinglist").Contains( stateid + ","))
+            {
+                cWfHListName = cWfHListName + "_" + stateid;
+            }
+          // string stateid = "4";
             // prepare site connection
             try
             {
@@ -658,7 +690,7 @@ namespace BulkPushConsoleApp
 
                 //stateid = "5";
                 CamlQuery camlQuery = new CamlQuery();
-                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit></View>";
+                camlQuery.ViewXml = "<View><RowLimit>5000</RowLimit></View>";
 
                 /* camlQuery.ViewXml = "<View><Query><Where><Or>" +
                                       "<Or><Eq><FieldRef Name='status' /><Value Type='Number'>"+ FMRStatus  + "</Value></Eq>" +

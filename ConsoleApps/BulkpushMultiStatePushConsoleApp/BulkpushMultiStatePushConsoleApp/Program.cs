@@ -24,7 +24,7 @@ namespace BulkpushMultiStatePushConsoleApp
 
                 // Get all instances of Notepad running on the local computer.
                 // This will return an empty array if notepad isn't running.
-                Process[] localByName = Process.GetProcessesByName("BulkPushConsoleApp");
+                Process[] localByName = Process.GetProcessesByName(getConfigvalue("processname"));
                 string strCurRunnStateids = "";
                 foreach(Process Proc in localByName)
                 { 
@@ -33,7 +33,8 @@ namespace BulkpushMultiStatePushConsoleApp
                 {
                         // return 
                         if(objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString()!=null)
-                        strCurRunnStateids +=  objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString().Split(' ')[1] + ",";
+                            if((objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString().Split(' ')[0]).ToString().ToLower().Contains(getConfigvalue("processname_root_folder")))
+                                    strCurRunnStateids +=  objects.Cast<ManagementBaseObject>().SingleOrDefault()?["CommandLine"]?.ToString().Split(' ')[1] + ",";
                 }
                 }
                // return;

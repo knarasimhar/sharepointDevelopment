@@ -47,7 +47,7 @@ namespace SPPipAPi.Models
             return responseFromServer;
 
         }
-        public static string DoWebreqeust(string url, string json)
+        public static string DoPostWebreqeust(string url, string json)
         {
             // create a request
             HttpWebRequest request = (HttpWebRequest)

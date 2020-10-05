@@ -180,6 +180,7 @@
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\CAMLQueryProcess.cs" />
+    <Compile Include="Models\clsIOTGeneral.cs" />
     <Compile Include="Models\CreateUser.cs" />
     <Compile Include="Models\ClsGeneral.cs" />
     <Compile Include="Models\pipflow.cs" />
