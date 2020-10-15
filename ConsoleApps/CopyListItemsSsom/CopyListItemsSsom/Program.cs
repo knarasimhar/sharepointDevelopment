@@ -35,6 +35,8 @@ namespace CopyListItemsSsom
         static Hashtable _userstable = new Hashtable();
         static void Main(string[] args)
         {
+
+         //  Thread.Sleep(120000);
             if (getConfigvalue("SITE_URL") != "")
                 strSiteURL = getConfigvalue("SITE_URL");
             if (getConfigvalue("DEST_SITE_URL") != "")
@@ -55,6 +57,11 @@ namespace CopyListItemsSsom
                 FMRStatus = "-3"; wfhstatus = "-4"; FMRSuccessStatus = "59"; FMRFailStatus = "57";
                 wfhSuccessstatus = "54"; wfhFailsstatus = "-54"; CallbackStatus = "-55"; CallbackFailStatus = "55";
             }
+            string filePath = getConfigvalue("statefind");
+            // below threding used for every 5 seconds process going on not wait for 1 minute
+            /* new Thread(new ThreadStart(() => {
+                 for (int x = 0; x < 8; x++)
+                 {*/
 
             using (SPSite site = new SPSite(strSiteURL))
             {
@@ -62,29 +69,42 @@ namespace CopyListItemsSsom
 
                 using (SPWeb web = site.OpenWeb())
                 {
+
                     if (args.Length == 0)
                         for (int i = 1; i <= 39; i++)
-                            // sequence process state wise 
-                            CopyItemsFromOneListToAnotherList(web, i.ToString());
+                             CopyItemsFromOneListToAnotherList(web, i.ToString());
+                       
                     else if (args[0] != null && args.Length == 1)
-                        // parllel process state wise 
-                        CopyItemsFromOneListToAnotherList(web, args[0]);
+                    // parllel process state wise 
+                    {
+                               string fileName = filePath +  @"\STATE_" + args[0];
+                                System.IO.File.Create(fileName + ".started").Dispose();
+                                CopyItemsFromOneListToAnotherList(web, args[0]);
+                                System.IO.File.Delete(fileName + ".started");
+   
+                    }
                     else if (args[0].ToLower() == "addfmr")
                     {
-                        for (int i = 1; i <= 39; i++)
-                            AddFMRCopyItems(web, args[1], "", i.ToString());
-                    }
+                                //    for (int i = 1; i <= 39; i++)
+                                //       AddFMRCopyItems(web, args[1], "", i.ToString());
+                                AddFMRCopyItems(web, args[1], "", "7");
+                            }
                     else if (args[0].ToLower() == "nextlevel")
                     {
                         strPUSHType = "nextlevel";
-                        for (int i = 1; i <= 39; i++)
-                            CopyItems(web, args[1], args[2], i.ToString());
-                    }
+                                //  for (int i = 1; i <= 39; i++)
+                                //   CopyItems(web, args[1], args[2], i.ToString());
+                                CopyItems(web, args[1], args[2], "7");
+                            }
 
 
                     // CopyItems(web, "Contacts", "Contacts");
                 }
             }
+                 /*   Console.WriteLine("X => {0}", x);
+                    Thread.Sleep(5000);
+                }
+            })).Start();*/
         }
         public static void CopyItemsFromOneListToAnotherList(SPWeb web, string stateid)
         {
@@ -95,9 +115,13 @@ namespace CopyListItemsSsom
                 destsite = new SPSite(strDestSiteURL);
                 destweb = destsite.OpenWeb();
                 sourceList = web.Lists[bulkpushlistname];
+                
+               /* DateTime Listdt = sourceList.LastItemModifiedDate;
+                TimeSpan t =  DateTime.Now.Subtract(Listdt);
+               if (t.TotalSeconds > 30) { Console.WriteLine("NO bulkpush records... "); return; }*/
                 destList = destweb.Lists[cWfHListName];
                 pipflow1 = destweb.Lists[cPipflowListName];
-                string[] strFMRStatuses = { "-6","-5", "-55", "-2", "-1", "-4", "-3", };
+                string[] strFMRStatuses = { "-6","-5", "-55", "-2", "-1", "-4", "-3"};
                 //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
                 foreach (string strFmrstatus in strFMRStatuses)
                 {
@@ -387,6 +411,7 @@ namespace CopyListItemsSsom
                                 // }
                                 SBquery.Clear();
                                 strQuerry = "";
+                                Thread.Sleep(5000);
                                 // break;
                                 //Console.ReadLine();break;
                             }
@@ -416,14 +441,16 @@ namespace CopyListItemsSsom
                         var elapsedMs = watch.Elapsed;
                         //Console.WriteLine("ITem id " + item.ID + " Bulk push SSOM call " + i + "_" + count + " state id is :" + stateid + " Time Take " + elapsedMs1);
                         Console.WriteLine("Last bulk push " + " Bulk push SSOM call " + ii + "_" + "state id is :" + stateid + " Time Take " + elapsedMs);
+                        Thread.Sleep(5000);
                     }
                     destweb.AllowUnsafeUpdates = false;
+                  
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Error message" + ex.Message);
-                Console.ReadLine();
+               // Console.ReadLine();
             }
             //Console.ReadLine();
         }
@@ -583,7 +610,7 @@ namespace CopyListItemsSsom
               "<SetVar Name=\"Cmd\">Save</SetVar>", cWfHListName, workflowhistoryGuid, taskid);
             //for update  "<SetVar Name=\"Cmd\">Save</SetVar>", _destListname, listGuid,"New");
 
-
+            SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "TaskOutcome", "1");
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "Status", status);
 
             SBquery.Append("</Method>");
@@ -591,21 +618,22 @@ namespace CopyListItemsSsom
             SBquery.AppendFormat("<Method ID=\"{0}\">" +
                   "<SetList>{1}</SetList>" +
                   "<SetVar Name=\"ID\">{2}</SetVar>" +
-                   //for update //
-                   //    "<SetVar Name=\"Cmd\">Save</SetVar>", _destListname, listGuid, item.ID)
-                   "<SetVar Name=\"Cmd\">Save</SetVar>", cWfHListName, workflowhistoryGuid, "New");
-            string strTitle = "MAIN task", strTaskoutcome = "1";
+                 
+            //for update //
+            //    "<SetVar Name=\"Cmd\">Save</SetVar>", _destListname, listGuid, item.ID)
+            "<SetVar Name=\"Cmd\">Save</SetVar>", cWfHListName, workflowhistoryGuid, "New");
+            string strTitle = "MAIN task";
             if (TASKTYPE == "2")
             {
-                strTaskoutcome = "";
+             
                 strTitle = "Additional Review";
             }
             else if (TASKTYPE == "3")
             {
-                strTaskoutcome = ""; strTitle = "ROP";
+              strTitle = "ROP";
             }
             else if (areviewuserTo != "")
-            { strTaskoutcome = ""; strTitle = "sub task"; }
+            {  strTitle = "sub task"; }
 
 
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "Title", strTitle);
@@ -613,7 +641,7 @@ namespace CopyListItemsSsom
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "event", assignevent);
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "comments", Comments);
 
-            SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "TaskOutcome", strTaskoutcome);
+            SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "TaskOutcome", "");
 
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "stateid", stateid);
 
@@ -677,11 +705,11 @@ namespace CopyListItemsSsom
             SPQuery SPquery = new SPQuery();
             //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
             SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='Status'/><Value Type='Text'>Not Started</Value></Eq></And></Where>";
-            SPquery.RowLimit = 3000;
+            SPquery.RowLimit = 100;
            // SPListItemCollection SPLists = SList.GetItems(SPquery);
            // Console.WriteLine(" Total list count for " + SPLists.Count.ToString());
           
-            for(int i=1;i<=3000;i++)
+            for(int i=1;i<=2000;i++)
             {
                 SPListItem newItem = DList.Items.Add();
                // ItemID = i.ToString();

@@ -17,8 +17,7 @@ namespace UpdateListItem
             String strSiteURL = "http://sharepoint2/sites/teamsiteex/PipFlowSite", strUSER = "spuser2", strPWD = "User@123#";
 
 
-            ClientContext clientContext = new ClientContext("http://sharepoint1/testlocal/");
-            clientContext.Credentials = new NetworkCredential("spuser2", "User@123#");
+        
             if (getConfigvalue("SITE_URL") != null)
                 strSiteURL = getConfigvalue("SITE_URL").ToString();
           
@@ -26,6 +25,9 @@ namespace UpdateListItem
                 strUSER = getConfigvalue("SITE_URL_USER").ToString();
             if (getConfigvalue("SITE_URL_PWD") != null)
                 strPWD = getConfigvalue("SITE_URL_PWD").ToString();
+
+            ClientContext clientContext = new ClientContext(strSiteURL);
+            clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
             Web web = clientContext.Web;
             clientContext.Load(web);
             //  var tasks;

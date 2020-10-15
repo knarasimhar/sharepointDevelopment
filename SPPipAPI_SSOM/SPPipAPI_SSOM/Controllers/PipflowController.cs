@@ -34,7 +34,7 @@ namespace SPPipAPI_SSOM.Controllers
         string cPipdeptListName = "pipdept";
         string cWfListName = "workflow_history";
         string cWfHListName = "workflow_history";
-            string cBulkListName = "bulkpushapis";
+        string cBulkListName = "bulkpushapis";
 
 
 
@@ -65,8 +65,8 @@ namespace SPPipAPI_SSOM.Controllers
             try
             {
 
-                
-                List <fmrlist> respmsg = null;
+
+                List<fmrlist> respmsg = null;
                 using (SPSite site = new SPSite(strSiteURL))
                 {
 
@@ -108,7 +108,7 @@ namespace SPPipAPI_SSOM.Controllers
                                     continue;
                                 if (stateid != "" && oListItem["stateid"].ToString().ToLower() != stateid.ToLower())
                                     continue;
-                             
+
                                 if (FY != "" && oListItem["FY"].ToString().ToLower() != FY.ToLower())
                                     continue;
 
@@ -154,6 +154,115 @@ namespace SPPipAPI_SSOM.Controllers
                 return getErrormessage(ex.Message);
             }
         }
+
+        [System.Web.Http.Route("api/Pipflow/getGroupbyStates")]
+        [System.Web.Http.HttpGet]
+        public HttpResponseMessage getGroupbyStates(string status, string roleids)
+        {
+            // prepare site connection
+            string strInRoleids = "";
+
+            foreach (string roleid in roleids.Split(','))
+            {
+                strInRoleids += "<Value Type='Number'>" + roleid + "</Value>";
+            }
+            try
+            {
+                using (SPSite site = new SPSite(strSiteURL))
+                {
+                    using (SPWeb web = site.OpenWeb())
+                    {
+
+
+                        if (status == null) status = "";
+
+                        SPQuery SPquery = new SPQuery();
+
+
+
+                        SPquery.Query = "<GroupBy Collapse=\"TRUE\" GroupLimit=\"200\"><FieldRef Name=\"stateid\"/><FieldRef Name=\"roleid\"/></GroupBy>"
+                            + "<Where><And>" +
+                           "<Eq><FieldRef Name='Status'/><Value Type='Text'>" + status + "</Value></Eq>"
+                          + "<In><FieldRef Name='roleid' /><Values>"
+                          + strInRoleids + "</Values></In>"
+                               //   " " </ Value >
+                               // "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + 1 + "</Value></Eq>" 
+                               //  "<And><Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>" +
+                               + "</And></Where>"
+
+                                + "  <ViewFields>"
+              + "<FieldRef Name='stateid' />"
+              + "<FieldRef Name='roleid' />"
+              + "</ViewFields>";
+
+                        web.AllowUnsafeUpdates = true;
+                        SPListItemCollection olists = web.Lists[cWfListName].GetItems(SPquery);
+
+
+                        //var q = web.Lists[cWfListName].RenderListData(SPquery.ViewXml);
+                        // Console.WriteLine("List ID::  " + list.Id);
+
+                        string strresp = ListColAsJson(olists);
+                        web.AllowUnsafeUpdates = false;
+                        return getHttpResponseMessage(strresp);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                return getErrormessage(ex.Message);
+            }
+
+
+        }
+
+        public string ListColAsJson(SPListItemCollection IndListItem)
+        {
+            //workout how many rows we have
+            int rowcnt = IndListItem.Count;
+            //variables for the field names, value & to build the json
+            string fld_name = "";
+            string fval = "";
+            string json = "{\"rows\":[";
+            //Loop through the list item collection
+            int i = 0;
+            foreach (SPListItem oListItem in IndListItem)
+            {
+                int fcount = oListItem.Properties.Count;
+                //Loop through the fields in this item
+                for (int j = 0; j < fcount; j++)
+                {
+                    // get field name & try to get a handle on its contents
+                    fld_name = oListItem.Name[j].GetType().FullName;
+                    try
+                    {
+                        fval = HttpUtility.HtmlEncode(oListItem.Name[j].ToString());
+                    }
+                    catch
+                    {
+                        fval = "Missing or invalid Value";
+                    }
+                    //try catch
+                    json += '"' + fld_name + '"' + ":" + '"' + fval + '"' + ",";
+                }
+                //for j field loop
+                // counter ensures we have commas after each row except last
+                i++;
+                if (i < IndListItem.Count - 1)
+                {
+                    json += "},";
+                }
+                else
+                {
+                    json += "}";
+                }
+                //if test for comma
+            }
+            //foreach row
+            json += "]}";
+            return json;
+        }
+
 
 
         [Route("api/Pipflow/spgetTaskDetails")]
@@ -342,13 +451,13 @@ namespace SPPipAPI_SSOM.Controllers
                     catch (Exception ex)
                     {
                         oItem["pushurl"] = ex.Message;
-                         return getErrormessage(ex.Message);
+                        return getErrormessage(ex.Message);
                     }
 
                     oItem.Update();
-                       web.AllowUnsafeUpdates = false;
+                    web.AllowUnsafeUpdates = false;
                 }
-              
+
             }
             return getSuccessmessage("Success");
         }
@@ -362,14 +471,15 @@ namespace SPPipAPI_SSOM.Controllers
             string strResp = "Success";
             using (SPSite site = new SPSite(strSiteURL))
             {
-              
+
                 using (SPWeb web = site.OpenWeb())
                 {
-                    SPSecurity.RunWithElevatedPrivileges(delegate () {
+                    SPSecurity.RunWithElevatedPrivileges(delegate ()
+                    {
                         using (SPSite ElevatedsiteColl = new SPSite(site.ID))
                         {
                             using (SPWeb ElevatedSite = ElevatedsiteColl.OpenWeb(web.ID))
-                            { 
+                            {
                                 web.AllowUnsafeUpdates = true;
                                 foreach (BulkpushAPIS BulkAPI in models)
                                 {
@@ -417,7 +527,7 @@ namespace SPPipAPI_SSOM.Controllers
                                     catch (Exception ex)
                                     {
 
-                                         strResp = ex.Message;
+                                        strResp = ex.Message;
                                     }
 
                                 }
@@ -426,9 +536,9 @@ namespace SPPipAPI_SSOM.Controllers
                     });
 
                     web.AllowUnsafeUpdates = true;
-                            }
-                       
-              
+                }
+
+
             }
             return getSuccessmessage(strResp);
         }
