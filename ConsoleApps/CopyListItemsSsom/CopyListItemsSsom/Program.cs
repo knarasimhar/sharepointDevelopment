@@ -27,7 +27,7 @@ namespace CopyListItemsSsom
 
         static Guid workflowhistoryGuid, pipflow1Guid, bulkpushapisGuid;
         static string stateids = "", FMRStatus = "-1", wfhstatus = "-2", FMRSuccessStatus = "9", FMRFailStatus = "7",
-                    wfhSuccessstatus = "4", wfhFailsstatus = "-4", CallbackStatus = "-5", DirectCallUrlStatus = "-6", CallbackFailStatus = "5";
+                    wfhSuccessstatus = "4", wfhFailsstatus = "-4", CallbackStatus = "-5", DirectCallUrlStatus = "0", CallbackFailStatus = "5";
         static string cPipflowListName = "pipflow1";
         static string stateid = "0", roleid = "0";
         static string cWfHListName = "workflow_history", bulkpushlistname = "bulkpushapis", url = "", ItemID = "", ItemStatus = "";
@@ -85,17 +85,26 @@ namespace CopyListItemsSsom
                     }
                     else if (args[0].ToLower() == "addfmr")
                     {
-                                //    for (int i = 1; i <= 39; i++)
-                                //       AddFMRCopyItems(web, args[1], "", i.ToString());
-                                AddFMRCopyItems(web, args[1], "", "7");
-                            }
+                        if(args[2]==null && args[2] != "")
+                                   for (int i = 1; i <= 39; i++)
+                                    AddFMRCopyItems(web, args[1], "", i.ToString());
+                        else
+                            AddFMRCopyItems(web, args[1], "", args[2].ToString());
+                        //  AddFMRCopyItems(web, args[1], "", "7");
+                    }
                     else if (args[0].ToLower() == "nextlevel")
                     {
                         strPUSHType = "nextlevel";
-                                //  for (int i = 1; i <= 39; i++)
-                                //   CopyItems(web, args[1], args[2], i.ToString());
-                                CopyItems(web, args[1], args[2], "7");
-                            }
+                        if (args[3] == null && args[3] != "")
+                        { 
+                           
+                                  for (int i = 1; i <= 39; i++)
+                                   CopyItems(web, args[1], args[2], i.ToString());
+                        }
+                        else
+                            CopyItems(web, args[1], args[2], args[3].ToString());
+                        // CopyItems(web, args[1], args[2], "7");
+                    }
 
 
                     // CopyItems(web, "Contacts", "Contacts");
@@ -121,12 +130,12 @@ namespace CopyListItemsSsom
                if (t.TotalSeconds > 30) { Console.WriteLine("NO bulkpush records... "); return; }*/
                 destList = destweb.Lists[cWfHListName];
                 pipflow1 = destweb.Lists[cPipflowListName];
-                string[] strFMRStatuses = { "-6","-5", "-55", "-2", "-1", "-4", "-3"};
+                string[] strFMRStatuses = { "0","-5", "-55", "-2", "-1", "-4", "-3"};
                 //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
                 foreach (string strFmrstatus in strFMRStatuses)
                 {
                     SPQuery SPquery = new SPQuery();
-                     if (strFmrstatus == "-1")
+                  /*   if (strFmrstatus == "-1")
                         SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-1</Value></Eq></And></Where>", stateid, strFmrstatus);
                     else if (strFmrstatus == "-2")
                         SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And></Where>";
@@ -143,10 +152,10 @@ namespace CopyListItemsSsom
 
                     else if (strFmrstatus == "-6")
                         SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-6</Value></Eq></And></Where>", stateid, strFmrstatus);
+                  */
 
-
-                    else if (strFmrstatus == "-55")
-                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-55</Value></Eq></And></Where>", stateid, strFmrstatus);
+                 
+                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And></Where>", stateid, strFmrstatus);
                     
                    // SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus1 + "</Value></Eq></And></Where>";
                    // SPquery.RowLimit = 2000;
@@ -244,6 +253,7 @@ namespace CopyListItemsSsom
 
                                     try
                                     {
+                                        
                                         // Create new stopwatch.
                                         Stopwatch stopwatch = new Stopwatch();
                                         stopwatch.Start();
