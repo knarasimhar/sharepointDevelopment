@@ -1,0 +1,39 @@
+﻿@using (Html.BeginForm())
+{
+    <input type="file" value="Choose a file" />
+    <br />
+    <input type="button" value="Upload" id="upload" />
+}
+<br/>
+@*<a href="https://localhost:44314/Home/DownloadFilesFromSharePoint" class="w3-button w3-black">Download files</a>*@
+<a href='@Url.Action("DownloadFilesFromSharePoint", "Home")'>
+    <span>Download files</span>
+</a>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js">
+@section scripts
+{
+    <script type="text/javascript">
+        $(document).ready(function() {
+            
+            $('#upload').click(function () {
+                
+            var data = new FormData();
+            var file = $('form input[type=file]')[0].files[0];
+            data.append('file',file);
+            $.ajax({
+                url:'Api/File/Upload',
+                processData: false,
+                contentType: false,
+                data: data,
+                type: 'POST'
+            }).done(function(result) {
+                alert(result);
+            }).fail(function(a, b, c) {
+                console.log(a, b, c);
+            });
+        });
+    });
+    </script>
+}

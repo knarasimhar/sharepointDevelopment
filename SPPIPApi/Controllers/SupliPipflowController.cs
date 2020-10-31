@@ -22,6 +22,7 @@ using System.Xml;
 using System.Data;
 using System.Xml.Linq;
 using System.Threading;
+using Newtonsoft.Json.Linq;
 
 namespace SPPipAPi.Controllers
 {
@@ -2660,11 +2661,17 @@ namespace SPPipAPi.Controllers
         [System.Web.Http.HttpPost]
         public HttpResponseMessage BulkPushAPIS(List<BulkpushAPIS> models)
         {
+
+
+            if (ClsGeneral.getConfigvalue("FROM_SSOM_URL_INSERT") != "")
+                return getHttpResponseMessage(ClsGeneral.DoPostWebreqeust(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/BulkPushAPIS" + ControllerContext.Request.RequestUri.Query.ToString(), JsonConvert.SerializeObject(models)));
+
+
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
 
             //Get the list items from list
-            SP.List oList = clientContext.Web.Lists.GetByTitle("bulkpushapis");
+            SP.List oList = clientContext.Web.Lists.GetByTitle("sbulkpushapis");
             ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
 
 
@@ -2677,7 +2684,45 @@ namespace SPPipAPi.Controllers
                     ListItem oItem = oList.AddItem(oListItemCreationInformation);
                     oItem["Title"] = BulkAPI.Title;
                     oItem["pushurl"] = BulkAPI.url;
-                    oItem["callbackurl"] = BulkAPI.callbackurl;
+                    string stateid = "0";
+                    if (ClsGeneral.getConfigvalue("REQESTFROM_API").ToUpper() != "Y")
+                    {
+
+                        var uri = new Uri(BulkAPI.url);
+                        var query = HttpUtility.ParseQueryString(uri.Query);
+                        dynamic QueryParams, QueryParam;
+                        QueryParams = JArray.Parse(ClsGeneral.GetJsonStringFromQueryString(query.ToString().ToLower()));
+
+                        QueryParam = QueryParams[0];
+
+                        if (QueryParam.stateid != null) stateid = QueryParam.stateid.Value;
+
+                        oItem["stateid"] = stateid;
+
+                         if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsetfmr?"))
+                        {
+                            oItem["status"] = "-3";
+                        }
+                        else if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsettaskitembyid?"))
+                        {
+                            oItem["status"] = "-4";
+                        }
+                        else if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsetfmr?"))
+                        {
+                            oItem["status"] = "-1";
+                        }
+                        else if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsettaskitembyid?"))
+                        {
+                            oItem["status"] = "-2";
+                        }// below two loop for suplimentary insertion to 
+                      
+                        else // direct web request all apps
+                        {
+                            oItem["status"] = "-6";
+                            oItem["log"] = "direct call";
+                        }
+                    }
+                    //oItem["callbackurl"] = BulkAPI.callbackurl;
                     oItem.Update();
                     //clientContext.Load(oItem);
                     clientContext.ExecuteQuery();
@@ -2691,7 +2736,6 @@ namespace SPPipAPi.Controllers
             }
             return getSuccessmessage("Success");
         }
-
         public string Get()
         {
             return "Welcome To Web API";
