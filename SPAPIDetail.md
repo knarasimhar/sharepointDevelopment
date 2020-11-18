@@ -313,7 +313,26 @@ Response output:
           success: success
           fail:  Error messag
 # end 
+13.
+# Bulk push through more than 50 fmrs json file uplaod
+Bulk push through more than 50 fmrs json file uplaod
+JOSN FILE NAME SHOULD ENDS WITH '_STATEID'
+eg file name : testindffilename_1
+SMAPLE PUSH API signature: 
+http://52.172.200.35:8111/sppipapigateway/api/SupliPipflow/BulkPushAPISJsonUpload
 
+Method type : POST
+
+Request body json:
+
+         [
+{ "Title": "sample string 1", "url": "sample string 2", "callbackurl": "sample string 3" }, { "Title": "sample string 1", "url": "sample string 2", "callbackurl": "sample string 3" } ]
+
+Response output:
+
+          success: success
+          fail:  Error messag
+# end 
 # Start Suplimentary only replace controller Pipflow to SupliPipflow
 SUPLIMENTARY FMRS same as above all APIS so plz note all signature with replace of controller Pipflow to SupliPipflow
 # END suplimentart
