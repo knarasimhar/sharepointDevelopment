@@ -315,9 +315,9 @@ Response output:
 # end 
 13.
 # Bulk push through more than 50 fmrs json file uplaod
-Bulk push through more than 50 fmrs json file uplaod
-JOSN FILE NAME SHOULD ENDS WITH '_STATEID'
-eg file name : testindffilename_1
+  Bulk push through more than 50 fmrs json file uplaod
+  JOSN FILE NAME SHOULD ENDS WITH '_STATEID'
+  eg file name : testindffilename_1
 SMAPLE PUSH API signature: 
 http://52.172.200.35:8111/sppipapigateway/api/SupliPipflow/BulkPushAPISJsonUpload
 
