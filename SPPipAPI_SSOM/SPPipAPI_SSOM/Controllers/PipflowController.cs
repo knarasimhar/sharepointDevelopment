@@ -21,7 +21,7 @@ using Microsoft.SharePoint;
 
 namespace SPPipAPI_SSOM.Controllers
 {
-    [EnableCors(origins: "http://sharepoint2:8081,http://localhost:44349", headers: "*", methods: "*")]
+    [EnableCors(origins: "*", headers: "*", methods: "*")]
     public class PipflowController : ApiController
     {
         // GET api/values/5
@@ -451,6 +451,7 @@ namespace SPPipAPI_SSOM.Controllers
                     catch (Exception ex)
                     {
                         oItem["pushurl"] = ex.Message;
+                      
                         return getErrormessage(ex.Message);
                     }
 
@@ -541,6 +542,40 @@ namespace SPPipAPI_SSOM.Controllers
 
             }
             return getSuccessmessage(strResp);
+        }
+
+        [System.Web.Http.Route("api/Pipflow/BulkPushAPISJsonUpload")]
+        [System.Web.Http.HttpPost]
+        public HttpResponseMessage BulkPushAPISJsonUpload()
+        {
+            // upload file name content should be filename__!fmrtype!_!roleid!_!stateid!.josn
+            // fmr type as pipflow or suplli
+            HttpResponseMessage result = null;
+            var httpRequest = HttpContext.Current.Request;
+            if (httpRequest.Files.Count > 0)
+            {
+              
+                foreach (string file in httpRequest.Files)
+                {
+                    var postedFile = httpRequest.Files[file];
+                    var filePath = HttpContext.Current.Server.MapPath("~/" + postedFile.FileName);
+                    try
+                    {
+                        if (ClsGeneral.getConfigvalue("UPLOAD_FILE_PATH") != "") filePath = ClsGeneral.getConfigvalue("UPLOAD_FILE_PATH") + "/" + postedFile.FileName;
+                  
+                    postedFile.SaveAs(filePath);
+                  
+                    }
+                    catch (Exception ex) { return getSuccessmessage(ex.Message); }
+                }
+                return getSuccessmessage("success");
+            }
+            else
+            {
+                return getErrormessage("failed");
+            }
+          
+         //   return result;
         }
     }
 }

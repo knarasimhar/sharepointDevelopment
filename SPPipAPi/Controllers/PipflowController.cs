@@ -2835,7 +2835,7 @@ namespace SPPipAPi.Controllers
                     ListItem oItem = oList.AddItem(oListItemCreationInformation);
                     oItem["Title"] = BulkAPI.Title;
                     oItem["pushurl"] = BulkAPI.url;
-                    string stateid = "0";
+                    string stateid = "0", roleid = "0";
                     if (ClsGeneral.getConfigvalue("REQESTFROM_API").ToUpper() != "Y")
                     {
 
@@ -2847,6 +2847,7 @@ namespace SPPipAPi.Controllers
                         QueryParam = QueryParams[0];
 
                         if (QueryParam.stateid != null) stateid = QueryParam.stateid.Value;
+                        if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
 
                         oItem["stateid"] = stateid;
 
@@ -2870,6 +2871,7 @@ namespace SPPipAPi.Controllers
                         {
                             oItem["status"] = "-6";
                             oItem["log"] = "direct call";
+                            if (oItem["roleid"] != null) oItem["roleid"] = roleid;
                         }
                     }
                     //oItem["callbackurl"] = BulkAPI.callbackurl;
@@ -2971,6 +2973,40 @@ namespace SPPipAPi.Controllers
 
             return getSuccessmessage("Success");
         }
+        [System.Web.Http.Route("api/Pipflow/BulkPushAPISJsonUpload")]
+        [System.Web.Http.HttpPost]
+        public HttpResponseMessage BulkPushAPISJsonUpload()
+        {
+            // upload file name content should be filename__!fmrtype!_!roleid!_!stateid!.josn
+            // fmr type as pipflow or suplli
+            HttpResponseMessage result = null;
+            var httpRequest = HttpContext.Current.Request;
+            if (httpRequest.Files.Count > 0)
+            {
+
+                foreach (string file in httpRequest.Files)
+                {
+                    var postedFile = httpRequest.Files[file];
+                    var filePath = HttpContext.Current.Server.MapPath("~/" + postedFile.FileName);
+                    try
+                    {
+                        if (ClsGeneral.getConfigvalue("UPLOAD_FILE_PATH") != "") filePath = ClsGeneral.getConfigvalue("UPLOAD_FILE_PATH") + "/" + postedFile.FileName;
+
+                        postedFile.SaveAs(filePath);
+
+                    }
+                    catch (Exception ex) { return getSuccessmessage(ex.Message); }
+                }
+                return getSuccessmessage("success");
+            }
+            else
+            {
+                return getErrormessage("failed");
+            }
+
+            //   return result;
+        }
+
         [System.Web.Http.Route("api/Pipflow/BulkPushAPIS_new")]
         [System.Web.Http.HttpPost]
         public HttpResponseMessage BulkPushAPIS_new(List<BulkpushAPIS> models)

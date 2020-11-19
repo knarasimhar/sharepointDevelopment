@@ -47,6 +47,8 @@ namespace SPPipAPi.Models
 
         public string stateid { get; set; }
         public string roleid { get; set; }
+
+        public string sid { get; set; }
     }
 
     
@@ -64,6 +66,7 @@ namespace SPPipAPi.Models
 
         public string roleid { get; set; }
 
+        public string sid { get; set; }
         public string RelatedItems { get; set; }
 
         public string Modified_By { get; set; }

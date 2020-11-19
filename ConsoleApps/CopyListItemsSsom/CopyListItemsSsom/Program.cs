@@ -29,10 +29,11 @@ namespace CopyListItemsSsom
         static string stateids = "", FMRStatus = "-1", wfhstatus = "-2", FMRSuccessStatus = "9", FMRFailStatus = "7",
                     wfhSuccessstatus = "4", wfhFailsstatus = "-4", CallbackStatus = "-5", DirectCallUrlStatus = "0", CallbackFailStatus = "5";
         static string cPipflowListName = "pipflow1";
-        static string stateid = "0", roleid = "0";
+        static string stateid = "0", roleid = "0",sid="0";
         static string cWfHListName = "workflow_history", bulkpushlistname = "bulkpushapis", url = "", ItemID = "", ItemStatus = "";
         static StringBuilder SBquery = new StringBuilder();
         static Hashtable _userstable = new Hashtable();
+        static bool isSuplimetary = false;
         static void Main(string[] args)
         {
 
@@ -51,9 +52,10 @@ namespace CopyListItemsSsom
                 cWfHListName = getConfigvalue("destinationListname");
             if (getConfigvalue("ISSUPLIMENTARY").ToLower() == "y")
             {
+                isSuplimetary = true;
                 cPipflowListName = "Spipflow1";
-                cWfHListName = "S" + getConfigvalue("destinationListname");
-
+                cWfHListName = "S" + cWfHListName;
+                bulkpushlistname = "S" + bulkpushlistname;
                 FMRStatus = "-3"; wfhstatus = "-4"; FMRSuccessStatus = "59"; FMRFailStatus = "57";
                 wfhSuccessstatus = "54"; wfhFailsstatus = "-54"; CallbackStatus = "-55"; CallbackFailStatus = "55";
             }
@@ -70,11 +72,7 @@ namespace CopyListItemsSsom
                 using (SPWeb web = site.OpenWeb())
                 {
 
-                    if (args.Length == 0)
-                        for (int i = 1; i <= 39; i++)
-                             CopyItemsFromOneListToAnotherList(web, i.ToString());
-                       
-                    else if (args[0] != null && args.Length == 1)
+                   if (args[0] != null && args.Length == 1)
                     // parllel process state wise 
                     {
                                string fileName = filePath +  @"\STATE_" + args[0];
@@ -209,6 +207,7 @@ namespace CopyListItemsSsom
                                     // if (stateid == "39") cWfHListName = cWfHListName + "_39"; ;
                                     if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
 
+                                    if (QueryParam.sid != null && isSuplimetary) sid = QueryParam.sid.Value;
 
 
                                     try
@@ -247,6 +246,7 @@ namespace CopyListItemsSsom
                                     if (QueryParam.stateid != null) stateid = QueryParam.stateid.Value;
 
                                     if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
+                                    if (QueryParam.sid != null && isSuplimetary) sid = QueryParam.sid.Value;
                                     if (QueryParam.callbackurl != null && QueryParam.callbackurl != "")
                                         wfhSuccessstatus = CallbackStatus;
                                     //targetListItem["Title"] = resp.url;
@@ -464,7 +464,7 @@ namespace CopyListItemsSsom
             }
             //Console.ReadLine();
         }
-        static private void spsetFMRDBBulk(string fmrid, string remarks, string AssignedTo = "", string FY = "", string stateid = "", string fmrtype = "", string roleid = "")
+        static private void spsetFMRDBBulk(string fmrid, string remarks,string AssignedTo = "", string FY = "", string stateid = "", string fmrtype = "", string roleid = "")
         {
             /*  SPListItem newItem = destList.Items.Add();
                          //for (int i = 0; i < item.Fields.Count; i++)
@@ -494,6 +494,8 @@ namespace CopyListItemsSsom
 
             }
             oListItem["roleid"] = roleid;
+            if(sid!="0")
+                oListItem["sid"] = sid;
             oListItem["FY"] = FY;
             oListItem["stateid"] = stateid;
             if (fmrtype != null && fmrtype != "")
@@ -533,6 +535,8 @@ namespace CopyListItemsSsom
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "stateid", stateid);
 
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "roleid", roleid);
+            if (sid != "0" && isSuplimetary)
+                SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "sid", sid);
 
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "Status", "Not Started");
 
@@ -657,6 +661,10 @@ namespace CopyListItemsSsom
 
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "roleid", roleid);
 
+            if (sid != "0" && isSuplimetary)
+                SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "sid", sid);
+
+
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "Status", "Not Started");
 
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "tasktype", TASKTYPE);
@@ -686,6 +694,8 @@ namespace CopyListItemsSsom
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "stateid", stateid);
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "roleid", roleid);
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "currenttaskid", taskid);
+            if (sid != "0" && isSuplimetary)
+                SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "sid", sid);
 
             SBquery.Append("</Method>");
 
@@ -709,9 +719,9 @@ namespace CopyListItemsSsom
         static private void AddFMRCopyItems(SPWeb web, string strCreatedby, string strAssignedTo, string stateid)
         {
 
-            string strSOurcelist = "workflow_history", strDestlist = "bulkpushapis";
+          
             //SPList SList = web.Lists[strSOurcelist];
-            SPList DList = web.Lists[strDestlist];
+            SPList DList = web.Lists[bulkpushlistname];
             SPQuery SPquery = new SPQuery();
             //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
             SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='Status'/><Value Type='Text'>Not Started</Value></Eq></And></Where>";
@@ -733,10 +743,20 @@ namespace CopyListItemsSsom
                 newItem["stateid"] = stateid;
                 if (strPUSHType == "addfmr")
                 {
-                    newItem["pushurl"] = string.Format("http://52.172.200.35:8111/pipflowsitetesting/api/Pipflow/spsetfmr?fmrid={0}&remarks=ADD_FMR_{1}_{0}" +
+                    if (!isSuplimetary)
+                    {
+                        newItem["pushurl"] = string.Format("http://52.172.200.35:8111/pipflowsitetesting/api/Pipflow/spsetfmr?fmrid={0}&remarks=ADD_FMR_{1}_{0}" +
                         "&listname=pipflow1&AssignedTo={3}&FY=2021-22" +
                         "&stateid={1}&fmrtype=1&roleid={2}", i.ToString(), stateid, "1", strCreatedby);
-                    newItem["status"] = "-1";
+                        newItem["status"] = "-1";
+                    }
+                    else
+                    {
+                        newItem["pushurl"] = string.Format("http://52.172.200.35:8111/pipflowsitetesting/api/SupliPipflow/spsetfmr?fmrid={0}&remarks=ADD_FMR_{1}_{0}" +
+                              "&listname=pipflow1&AssignedTo={3}&FY=2021-22" +
+                              "&stateid={1}&fmrtype=1&roleid={2}&sid=1", i.ToString(), stateid, "1", strCreatedby);
+                        newItem["status"] = "-3";
+                    }
                 }
                
                 var watch1 = System.Diagnostics.Stopwatch.StartNew();
@@ -753,9 +773,8 @@ namespace CopyListItemsSsom
         static private void CopyItems(SPWeb web, string strCreatedby, string strAssignedTo, string stateid)
         {
 
-            string strSOurcelist = "workflow_history", strDestlist = "bulkpushapis";
-            SPList SList = web.Lists[strSOurcelist];
-            SPList DList = web.Lists[strDestlist];
+             SPList SList = web.Lists[cWfHListName];
+            SPList DList = web.Lists[bulkpushlistname];
             SPQuery SPquery = new SPQuery();
             //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
             SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='Status'/><Value Type='Text'>Not Started</Value></Eq></And></Where>";
@@ -775,7 +794,9 @@ namespace CopyListItemsSsom
                 //   newItem[newItem.Fields[i].InternalName] = item[newItem.Fields[i].InternalName];
                 newItem["Title"] = item["Title"];
                 newItem["stateid"] = item["stateid"];
-                if (strPUSHType == "addfmr")
+                if (isSuplimetary && item["sid"] != null)
+                    sid = (int.Parse(item["sid"].ToString()) + 1).ToString();
+                    if (strPUSHType == "addfmr")
                 {
                     newItem["pushurl"] = string.Format("http://52.172.200.35:8111/pipflowsitetesting/api/Pipflow/spsetfmr?fmrid=bulkpush_{0}&remarks=U.8.1.5" +
                         "&listname=pipflow1&AssignedTo=spm&FY=2021-22" +
@@ -784,10 +805,21 @@ namespace CopyListItemsSsom
                 }
                 else
                 {
-                    newItem["pushurl"] = string.Format("http://52.172.200.35:8111/sppipapitestlocal/api/Pipflow/spsettaskitembyid?status=approved&percentcomplete=1&comments=how%20r%20ou" +
-                        "&taskid={0}&createdby={1}&assignevent=1&assignedto={2}&areviewuserTo=&spfmrid={3}&TASKTYPE=1&stateid={4}&roleid={5}" +
-                        "&callbackurl=", ItemID, strCreatedby, strAssignedTo, item["relateditem"], item["stateid"], item["roleid"]);
-                    newItem["status"] = "-2";
+                    if (!isSuplimetary)
+                    {
+                        newItem["pushurl"] = string.Format("http://52.172.200.35:8111/sppipapitestlocal/api/Pipflow/spsettaskitembyid?status=approved&percentcomplete=1&comments=how%20r%20ou" +
+                          "&taskid={0}&createdby={1}&assignevent=1&assignedto={2}&areviewuserTo=&spfmrid={3}&TASKTYPE=1&stateid={4}&roleid={5}" +
+                          "&callbackurl=", ItemID, strCreatedby, strAssignedTo, item["relateditem"], item["stateid"], item["roleid"]);
+                        newItem["status"] = "-2";
+                    }
+                    else
+                    {
+                        newItem["pushurl"] = string.Format("http://52.172.200.35:8111/sppipapitestlocal/api/Pipflow/spsettaskitembyid?status=approved&percentcomplete=1&comments=how%20r%20ou" +
+                      "&taskid={0}&createdby={1}&assignevent=1&assignedto={2}&areviewuserTo=&spfmrid={3}&TASKTYPE=1&stateid={4}&roleid={5}" +
+                      "&sid={6}&callbackurl=", ItemID, strCreatedby, strAssignedTo, item["relateditem"], item["stateid"], item["roleid"], sid);
+                        newItem["status"] = "-4";
+                    }
+                    
                 }
                 var watch1 = System.Diagnostics.Stopwatch.StartNew();
                 watch1.Start();
