@@ -75,8 +75,14 @@ namespace CopyListItemsSsom
                    if (args[0] != null && args.Length == 1)
                     // parllel process state wise 
                     {
+                           
+
                                string fileName = filePath +  @"\STATE_" + args[0];
                                 System.IO.File.Create(fileName + ".started").Dispose();
+                              
+                              // befor verfiy any bulkpush uploaded by states
+                              CopyItemsThrougJSONFILE(web, args[0]);
+
                                 CopyItemsFromOneListToAnotherList(web, args[0]);
                                 System.IO.File.Delete(fileName + ".started");
    
@@ -770,6 +776,115 @@ namespace CopyListItemsSsom
             }
 
         }
+        static private void CopyItemsThrougJSONFILE(SPWeb web, string stateid)
+        {
+            // below loop is for Verify the FIle is posted or not
+            try
+            {
+                if (getConfigvalue("UPLOAD_FILE_PATH") != "")
+                {
+
+                    string filePath = getConfigvalue("UPLOAD_FILE_PATH");
+                    string processedFIle = "";
+                    if (isSuplimetary)
+                        filePath += @"\suppli";
+                    else
+                        filePath += @"\normal";
+                    if (!System.IO.Directory.Exists(filePath)) return;
+                    if (!System.IO.Directory.Exists(filePath + @"\processed\")) System.IO.Directory.CreateDirectory(filePath + @"\processed\");
+                        DirectoryInfo di = new DirectoryInfo(filePath);
+
+                    foreach (var fi in di.GetFiles())
+                    {
+                        // Console.WriteLine(fi.Name);
+                        if (fi.Name.EndsWith("_" + stateid + ".json"))
+                        {
+                           
+                            StreamReader sr = new StreamReader(filePath + @"\" + fi.Name);
+                            string jsonString = sr.ReadToEnd();
+                            sr.Dispose();
+                            sr.Close();
+                            fi.MoveTo(filePath + @"\processed\" + fi.Name);
+                          
+
+
+                            SPList DList = web.Lists[bulkpushlistname];
+                            List<BulkpushAPIS> ListBulkpushAPIS = Newtonsoft.Json.JsonConvert.DeserializeObject<List<BulkpushAPIS>>(jsonString);
+
+                            int SNO = 1;
+                            foreach (BulkpushAPIS BulkAPI in ListBulkpushAPIS)
+                            {
+                                SPListItem oItem = DList.Items.Add();
+
+
+                                oItem["Title"] = BulkAPI.Title;
+                                oItem["pushurl"] = BulkAPI.url;
+
+                                var uri = new Uri(BulkAPI.url);
+                                var query = HttpUtility.ParseQueryString(uri.Query);
+                                dynamic QueryParams, QueryParam;
+                                QueryParams = JArray.Parse(ClsGeneral.GetJsonStringFromQueryString(query.ToString().ToLower()));
+
+                                QueryParam = QueryParams[0];
+
+                                if (QueryParam.stateid != null) stateid = QueryParam.stateid.Value;
+
+                                oItem["stateid"] = stateid;
+
+                                if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
+
+                                oItem["roleid"] = roleid;
+
+                                if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsetfmr?"))
+                                {
+                                    oItem["status"] = "-1";
+                                }
+                                else if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsettaskitembyid?"))
+                                {
+                                    oItem["status"] = "-2";
+                                }// below two loop for suplimentary insertion to 
+                                else if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsetfmr?"))
+                                {
+                                    oItem["status"] = "-3";
+                                }
+                                else if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsettaskitembyid?"))
+                                {
+                                    oItem["status"] = "-4";
+                                }
+
+                                var watch1 = System.Diagnostics.Stopwatch.StartNew();
+                                watch1.Start();
+                                // the code that you want to measure comes here
+                                oItem.Update();
+                                watch1.Stop();
+                                var elapsedMs1 = watch1.Elapsed;
+                                Console.WriteLine("JSON CALL State ID " + stateid + " Bulk push SSOM JSON call  " + SNO + " Title " + BulkAPI.Title + " Time Take " + elapsedMs1);
+                                SNO++;
+                                //  if (SNO % 2000 == 0) break;
+
+                                processedFIle = fi.Name;
+                               
+
+                               
+                            }
+                          
+                           
+
+
+                        }
+                
+                      // if (processedFIle != "") { System.IO.File.Delete(filePath + @"/" + processedFIle); break;  }
+                      
+
+                    }
+                    
+                }
+
+
+                else return;
+            }
+            catch(Exception ex) { Console.WriteLine("JSON CALL Exception " + ex.Message); return; }
+            }
         static private void CopyItems(SPWeb web, string strCreatedby, string strAssignedTo, string stateid)
         {
 
