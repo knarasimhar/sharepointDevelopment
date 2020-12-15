@@ -835,6 +835,12 @@ namespace CopyListItemsSsom
 
                                 oItem["roleid"] = roleid;
 
+                                if (isSuplimetary &&  oItem["sid"] != null)
+                                {
+                                    if (QueryParam.sid != null) oItem["sid"] = QueryParam.sid.Value;
+                                   
+                                }
+
                                 if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsetfmr?"))
                                 {
                                     oItem["status"] = "-1";

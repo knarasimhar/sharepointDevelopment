@@ -262,6 +262,27 @@ public class pipflowevents
         public string url { get; set; }
 
         public string callbackurl { get; set; }
+
+       
+        #endregion
+    }
+    public class BulkpushAPIDetails
+    {
+        #region Properties
+        public string id { get; set; }
+        public string Title { get; set; }
+        public string url { get; set; }
+        public string log { get; set; }
+
+        public string pushurl { get; set; }
+        //public string callbackurl { get; set; }
+
+        public string status { get; set; }
+        public string stateid { get; set; }
+
+        public string roleid { get; set; }
+        public string Created { get; set; }
+        public string Modified { get; set; }
         #endregion
     }
     public class RelatedItemFieldValue

@@ -39,6 +39,7 @@ namespace SPPipAPi.Controllers
         string cPipdeptListName = "Spipdept";
         string cWfListName = "Sworkflow_history";
         string cWfSHListName = "Sworkflow_history";
+        string cBUlkPushListName = "SBulkPushAPIS";
         public SupliPipflowController()
         {
             if (ConfigurationManager.AppSettings["SITE_URL"] != null)
@@ -182,7 +183,7 @@ namespace SPPipAPi.Controllers
                 if (serarchCount == 1) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
                 // if (serarchCount > 2) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
                 //  if (serarchCount == 0)
-                strCamlQuery = "<View><RowLimit>100000</RowLimit></View>";
+                strCamlQuery = "<View><RowLimit>1000000</RowLimit></View>";
 
                 camlQuery.ViewXml = "<View><Query><Where><And>" +
                               "<And><Eq><FieldRef Name='fmrtype' /><Value Type='Number'>" + fmrtype + "</Value></Eq>" +
@@ -252,6 +253,7 @@ namespace SPPipAPi.Controllers
                            item => item["fmrtype"],
                           item => item["stateid"],
                            item => item["roleid"],
+                            item => item["sid"],
                         item => item["currenttaskid"]));
                 clientContext.ExecuteQuery();
                 List<fmrlist> respmsg = new List<fmrlist>();
@@ -306,7 +308,7 @@ namespace SPPipAPi.Controllers
                             }
                         }
                         // new code implemented for eliminate the task geranration time 
-                        //  string currentTaskID = getCurrentTaskIDofFMR(oListItem.Id.ToString(), strLookupAssignTOIds);
+                       //  string currentTaskID = getCurrentTaskIDofFMR(oListItem.Id.ToString(), strLookupAssignTOIds);
                         respmsg.Add(new fmrlist
                         {
                             id = oListItem.Id.ToString(),
@@ -331,10 +333,10 @@ namespace SPPipAPi.Controllers
                             currentassign_to_id = (oListItem["currentAssignee"] != null) ? strLookupIDS.TrimEnd(',') : ""
                         });
                     }
-                    catch
+                    catch(Exception ex)
                     {
 
-
+                        return getHttpResponseMessage(JsonConvert.SerializeObject(ex.Message));
                     }
 
 
@@ -557,7 +559,7 @@ namespace SPPipAPi.Controllers
                 // global parameters
 
                 CamlQuery camlQuery = new CamlQuery();
-                camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
+                camlQuery.ViewXml = "<View><RowLimit>100000</RowLimit></View>";
                 camlQuery.ViewXml = "<View><Where><Eq><FieldRef Name='ry3a' /><Value Type='User'>SPM</Value></Eq></Where></View>";
                 // prepare site connection
                 ClientContext clientContext = new ClientContext(strSiteURL);
@@ -2007,7 +2009,7 @@ namespace SPPipAPi.Controllers
                 // prepare site connection
                 camlQuery.ViewXml = "<View><RowLimit>50000</RowLimit></View>";
 
-                camlQuery.ViewXml = "<View><RowLimit>5000</RowLimit><Query><Where><And>";
+                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>";
                // if (roleid != "")
                     camlQuery.ViewXml += "<And>";
                 camlQuery.ViewXml += "<Eq><FieldRef Name='tasktype' /><Value Type='Number'>" + TaskType + "</Value></Eq>" +
@@ -2779,6 +2781,152 @@ namespace SPPipAPi.Controllers
             }
             return getSuccessmessage("Success");
         }
+
+        [Route("api/SupliPipflow/spgetBulkpushDetails")]
+
+        [HttpGet, HttpPost]
+        public HttpResponseMessage spgetBulkpushDetails(string stateid = "", string status = "", string roleid = "", string sid = "")
+        {
+
+            // prepare site connection
+            try
+            {
+                // global parameters<View><Query>
+                if (ClsGeneral.getConfigvalue("FROM_SSOM_URL") != "")
+                    return getHttpResponseMessage(ClsGeneral.DoWebGetRequest(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/spgetBulkpushDetails" + ControllerContext.Request.RequestUri.Query.ToString(), ""));
+
+
+                string strCamlQuery_temp = "<View><Query><Where><And>!WHERE!</And></Where></Query></View>";
+                string strWhereText_temp = "<Eq><FieldRef Name='!NAME!'/><Value Type='!TYPE!'>!VALUE!</Value></Eq>";
+                // string strWhereText_temp_withoutAND = "<Eq><FieldRef Name='!NAME!'/><Value Type='!TYPE!'>!VALUE!</Value></Eq>";
+                string strCamlQuery = "";
+                int serarchCount = 0;
+
+                // if (1 == 1) strCamlQuery += strWhereText_temp.Replace("!NAME!", "1").Replace("!TYPE!", "Text").Replace("!VALUE!", "1");
+                if (stateid != null && stateid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "stateid").Replace("!TYPE!", "Number").Replace("!VALUE!", stateid); } else stateid = "";
+                if (roleid != null && roleid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "roleid").Replace("!TYPE!", "Number").Replace("!VALUE!", roleid); } else roleid = "";
+                if (status != null && status != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "status").Replace("!TYPE!", "Number").Replace("!VALUE!", status); } else status = "";
+                if (sid != null && sid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "sid").Replace("!TYPE!", "Number").Replace("!VALUE!", sid); } else sid = "";
+
+
+                CamlQuery camlQuery = new CamlQuery();
+                /* old camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
+                camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRef Name='Status'/><Value Type='Choice'>Not Started</Value></Eq>"
+                                              + "<Eq><FieldRef Name='AssignedTo'/><Value Type='UserMulti'>{0}</Value></Eq><Contains><FieldRef Name='RelatedItems'/><Value Type='Text'>:{1},</Value></Contains>");
+                   + "</Where></Query></View>", Userid.TrimEnd(','), FMRID);*/
+
+                strCamlQuery = "<View><RowLimit>100000</RowLimit></View>";
+
+                if (serarchCount != 0)
+                {
+                    strCamlQuery = strCamlQuery_temp.Replace("!WHERE!", strCamlQuery);
+                    if (serarchCount == 1) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
+                    // if (serarchCount > 2) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
+                    //  if (serarchCount == 0)
+                    if (status != "" && stateid != "" && roleid != "" && sid!="")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                      "<And><Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>" +
+                                      "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>"+
+                                      "<And><Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                    else if (status != "" && stateid != "" && roleid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                      "<And><Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>" +
+                                      "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>";
+                    else if (status != "" && stateid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                      "<Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>" +
+                                      "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                    else if (stateid != "" && roleid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                      "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>" +
+                                      "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                    else if (status != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                             "<Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>";
+
+                    else if (stateid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                             "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                    else if (roleid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                             "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+
+                    if (status != "" && stateid != "" && roleid != "" && sid != "")
+                           camlQuery.ViewXml += "<Eq><FieldRef Name='sid' /><Value Type='Number'>" + sid + "</Value></Eq></And>";
+                    else if (status != "" && stateid != "" && roleid != "")
+                        camlQuery.ViewXml += "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                    if (serarchCount > 1)
+                        camlQuery.ViewXml += "</And></Where></Query></View>";
+                    else
+                        camlQuery.ViewXml += "</Where></Query></View>";
+                }
+
+
+
+                ClientContext clientContext = new ClientContext(strSiteURL);
+
+                clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
+                Web web = clientContext.Web;
+                clientContext.Load(web);
+                User user = clientContext.Web.CurrentUser;
+                clientContext.Load(user);
+                clientContext.ExecuteQuery();
+
+                List list = web.Lists.GetByTitle(cBUlkPushListName);
+
+                ListItemCollection olists;
+
+
+                olists = list.GetItems(camlQuery);
+                // Console.WriteLine("List ID::  " + list.Id);
+                clientContext.Load(olists);
+                clientContext.ExecuteQuery();
+                List<BulkpushAPIDetails> respmsg = new List<BulkpushAPIDetails>();
+
+
+
+
+                foreach (ListItem oListItem in olists)
+                {
+                    try
+                    {
+
+                        respmsg.Add(new BulkpushAPIDetails
+                        {
+                            id = oListItem.Id.ToString(),
+                            Title = (oListItem["Title"] != null) ? oListItem["Title"].ToString() : "",
+                            status = (oListItem["status"] != null) ? oListItem["status"].ToString() : "",
+                            stateid = (oListItem["stateid"] != null) ? oListItem["stateid"].ToString() : "",
+                            roleid = (oListItem["roleid"] != null) ? oListItem["roleid"].ToString() : "",
+                            pushurl = (oListItem["pushurl"] != null) ? oListItem["pushurl"].ToString() : "",
+                            log = (oListItem["log"] != null) ? oListItem["log"].ToString() : "",
+                            Created = (oListItem["Created"] != null) ? oListItem["Created"].ToString() : "",
+                            Modified = (oListItem["Modified"] != null) ? oListItem["Modified"].ToString() : ""
+
+                        });
+                    }
+                    catch
+                    {
+
+
+                    }
+
+
+                }
+
+                return getHttpResponseMessage(JsonConvert.SerializeObject(respmsg));
+            }
+            catch (Exception ex)
+            {
+
+
+                return getErrormessage(ex.Message);
+            }
+
+
+
+        }
+
         public string Get()
         {
             return "Welcome To Web API";

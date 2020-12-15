@@ -41,8 +41,9 @@ namespace SPPipAPi.Controllers
         string cPipdeptListName = "pipdept";
         string cWfListName = "workflow_history";
         string cWfHListName = "workflow_history";
+        string cBUlkPushListName = "BulkPushAPIS";
 
-       
+
 
         public PipflowController()
         {
@@ -161,7 +162,7 @@ namespace SPPipAPi.Controllers
             {
                 // global parameters<View><Query>
                 if (ClsGeneral.getConfigvalue("FROM_SSOM_URL") != "")
-                    return getHttpResponseMessage(ClsGeneral.DoWebGetRequest(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/spgetListByName" + ControllerContext.Request.RequestUri.Query.ToString(),""));
+                    return getHttpResponseMessage(ClsGeneral.DoWebGetRequest(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/spgetListByName" + ControllerContext.Request.RequestUri.Query.ToString(), ""));
 
 
                 string strCamlQuery_temp = "<View><Query><Where><And>!WHERE!</And></Where></Query></View>";
@@ -192,12 +193,12 @@ namespace SPPipAPi.Controllers
                 camlQuery.ViewXml = "<View><RowLimit>5000</RowLimit><Query><Where><And>" +
                               "<And><Eq><FieldRef Name='fmrtype' /><Value Type='Number'>" + fmrtype + "</Value></Eq>" +
                               "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>";
-                if(roleid!="")
-                camlQuery.ViewXml += "<And><Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                if (roleid != "")
+                    camlQuery.ViewXml += "<And><Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
                 camlQuery.ViewXml += "<Eq><FieldRef Name='FY' /><Value Type='Text'>" + FY + "</Value></Eq>";
                 if (roleid != "")
                     camlQuery.ViewXml += "</And>";
-                   camlQuery.ViewXml += "</And></Where></Query></View>";
+                camlQuery.ViewXml += "</And></Where></Query></View>";
                 //camlQuery.ViewXml = strCamlQuery;
 
 
@@ -491,7 +492,7 @@ namespace SPPipAPi.Controllers
 
         [Route("api/Pipflow/spupdateFMR")]
         [HttpGet, HttpPost]
-        public HttpResponseMessage spupdateFMR(string Listname, string fmrSPid, string remarks, string status)
+        public HttpResponseMessage spupdateFMR(string Listname, string fmrSPid, string remarks, string status, string oldtitle = "", string newtitle = "")
         {
 
             // prepare site connection
@@ -499,8 +500,7 @@ namespace SPPipAPi.Controllers
             {
                 // global parameters
 
-                CamlQuery camlQuery = new CamlQuery();
-                camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
+
 
                 // prepare site connection
                 ClientContext clientContext = new ClientContext(strSiteURL);
@@ -513,14 +513,30 @@ namespace SPPipAPi.Controllers
                 else
                     oList = clientContext.Web.Lists.GetByTitle(cPipflowListName);
 
-                ListItem targetListItem = oList.GetItemById(fmrSPid);
+                ListItem targetListItem;
+                if (fmrSPid != null && fmrSPid != "")
+                    targetListItem = oList.GetItemById(fmrSPid);
+                else
+                {
 
+                    CamlQuery camlQuery = new CamlQuery();
+                    camlQuery.ViewXml = "<View><Query><Where><Eq><FieldRef Name='Title'/><Value Type='Text'>" + oldtitle + "</Value></Eq></Where></Query></View>";
+                    ListItemCollection oLists = oList.GetItems(camlQuery);
+                    clientContext.Load(oLists);
+                    clientContext.ExecuteQuery();
+                    if (oLists.Count == 0) return getSuccessmessage("Title:" + oldtitle + " Not found");
+                    targetListItem = oLists[0];
+                    targetListItem["Title"] = newtitle;
+                }
 
 
                 if (remarks != "")
                     targetListItem["remarks"] = remarks;
                 if (status != "")
                     targetListItem["status"] = status;
+
+
+
 
                 //oListItem["Body"] = "Hello World!";
 
@@ -1877,7 +1893,7 @@ namespace SPPipAPi.Controllers
                 // prepare site connection
                 camlQuery.ViewXml = "<View><RowLimit>50000</RowLimit></View>";
 
-                camlQuery.ViewXml = "<View><RowLimit>5000</RowLimit><Query><Where><And>";
+                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>";
                 if (roleid != "")
                     camlQuery.ViewXml += "<And>";
                 camlQuery.ViewXml += "<Eq><FieldRef Name='tasktype' /><Value Type='Number'>" + TaskType + "</Value></Eq>" +
@@ -2721,7 +2737,7 @@ namespace SPPipAPi.Controllers
 
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
-            
+
             //Get the list items from list
             SP.List oList = clientContext.Web.Lists.GetByTitle("bulkpushapis");
             ListItemCreationInformation oListItemCreationInformation = new ListItemCreationInformation();
@@ -2735,43 +2751,43 @@ namespace SPPipAPi.Controllers
                 oItem["Title"] = "IOT DATA";
                 oItem["status"] = "-9";
                 oItem["pushurl"] = postData.ToString();
-               
+
                 string strLog = "";
                 //   List<IotDevice> iotDobj = new List<IotDevice>
 
-                double finalDistance=0,distance, ratio;
+                double finalDistance = 0, distance, ratio;
                 Hashtable _htDivices = new Hashtable();
                 List<IotDevice> obj = JsonConvert.DeserializeObject<List<IotDevice>>(postData.ToString());
-               
+
                 foreach (IotDevice sobj in obj)
                 {
                     if (sobj.type.ToLower() == "gateway")
                     { strLog = sobj.mac + ",gateway,"; break; }
 
                 }
-            
+
                 foreach (string strDevic in ClsGeneral.getConfigvalue("macs").Split(','))
                 {
-                      
+
                     foreach (IotDevice sobj in obj)
                     {
-                      
-                        if (sobj.mac == strDevic && sobj.ibeaconTxPower!=null)
+
+                        if (sobj.mac == strDevic && sobj.ibeaconTxPower != null)
                         {
-                          
+
                             ratio = double.Parse(sobj.rssi) * 1.0 / (double.Parse(sobj.ibeaconTxPower));
-                           // var distance = 0;
+                            // var distance = 0;
                             if (ratio < 1.0)
                             {
-                                 distance = Math.Pow(ratio, 10);
+                                distance = Math.Pow(ratio, 10);
                             }
                             else
                             {
-                                 distance = (0.89976) * Math.Pow(ratio, 7.7095) + 0.111;
-                               // return distance;
+                                distance = (0.89976) * Math.Pow(ratio, 7.7095) + 0.111;
+                                // return distance;
                             }
-                           // double distance = Math.Pow(10, ((double.Parse(sobj.ibeaconTxPower) - double.Parse(sobj.rssi)) / (10 * 2)));
-                          //  strLog += sobj.mac + "," + Math.Round(distance,2).ToString() + ",";
+                            // double distance = Math.Pow(10, ((double.Parse(sobj.ibeaconTxPower) - double.Parse(sobj.rssi)) / (10 * 2)));
+                            //  strLog += sobj.mac + "," + Math.Round(distance,2).ToString() + ",";
                             if (_htDivices.Contains(strDevic))
                                 _htDivices[strDevic] = double.Parse(_htDivices[strDevic].ToString()) + distance;
                             else
@@ -2785,7 +2801,7 @@ namespace SPPipAPi.Controllers
                         }
                     }
                     if (_htDivices.Contains(strDevic))
-                        finalDistance = Math.Round(double.Parse(_htDivices[strDevic].ToString()) / int.Parse(_htDivices[strDevic + "_count"].ToString()),2);
+                        finalDistance = Math.Round(double.Parse(_htDivices[strDevic].ToString()) / int.Parse(_htDivices[strDevic + "_count"].ToString()), 2);
                     strLog += strDevic + "," + finalDistance.ToString() + ",";
                 }
                 if (ClsGeneral.getConfigvalue("macs") != "")
@@ -2798,15 +2814,150 @@ namespace SPPipAPi.Controllers
                 oItem["pushurl"] = ex.Message;
                 // return getErrormessage(ex.Message);
             }
-           
-           oItem.Update();
+
+            oItem.Update();
             //clientContext.Load(oItem);
             clientContext.ExecuteQuery();
 
             return getSuccessmessage("Success");
         }
 
+        [Route("api/Pipflow/spgetBulkpushDetails")]
 
+        [HttpGet, HttpPost]
+        public HttpResponseMessage spgetBulkpushDetails(string stateid = "", string status = "", string roleid = "")
+        {
+
+            // prepare site connection
+            try
+            {
+                // global parameters<View><Query>
+                if (ClsGeneral.getConfigvalue("FROM_SSOM_URL") != "")
+                    return getHttpResponseMessage(ClsGeneral.DoWebGetRequest(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/spgetBulkpushDetails" + ControllerContext.Request.RequestUri.Query.ToString(), ""));
+
+
+                string strCamlQuery_temp = "<View><Query><Where><And>!WHERE!</And></Where></Query></View>";
+                string strWhereText_temp = "<Eq><FieldRef Name='!NAME!'/><Value Type='!TYPE!'>!VALUE!</Value></Eq>";
+                // string strWhereText_temp_withoutAND = "<Eq><FieldRef Name='!NAME!'/><Value Type='!TYPE!'>!VALUE!</Value></Eq>";
+                string strCamlQuery = "";
+                int serarchCount = 0;
+
+                // if (1 == 1) strCamlQuery += strWhereText_temp.Replace("!NAME!", "1").Replace("!TYPE!", "Text").Replace("!VALUE!", "1");
+                if (stateid != null && stateid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "stateid").Replace("!TYPE!", "Number").Replace("!VALUE!", stateid); } else stateid = "";
+                if (roleid != null && roleid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "roleid").Replace("!TYPE!", "Number").Replace("!VALUE!", roleid); } else roleid = "";
+                if (status != null && status != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "status").Replace("!TYPE!", "Number").Replace("!VALUE!", status); } else status = "";
+
+
+
+                CamlQuery camlQuery = new CamlQuery();
+                /* old camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
+                camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRef Name='Status'/><Value Type='Choice'>Not Started</Value></Eq>"
+                                              + "<Eq><FieldRef Name='AssignedTo'/><Value Type='UserMulti'>{0}</Value></Eq><Contains><FieldRef Name='RelatedItems'/><Value Type='Text'>:{1},</Value></Contains>");
+                   + "</Where></Query></View>", Userid.TrimEnd(','), FMRID);*/
+
+                strCamlQuery = "<View><RowLimit>100000</RowLimit></View>";
+
+                if (serarchCount != 0)
+                {
+                    strCamlQuery = strCamlQuery_temp.Replace("!WHERE!", strCamlQuery);
+                    if (serarchCount == 1) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
+                    // if (serarchCount > 2) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
+                    //  if (serarchCount == 0)
+                    if (status != "" && stateid != "" && roleid!="")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                      "<And><Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>" +
+                                      "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>";
+                    else if (status != "" && stateid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                      "<Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>" +
+                                      "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                    else if (stateid != "" && roleid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                      "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>" +
+                                      "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                    else if (status != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                             "<Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>";
+
+                    else if (stateid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                             "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                    else if (roleid != "")
+                        camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                             "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                    if (status != "" && stateid != "" && roleid != "")
+                        camlQuery.ViewXml += "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                    if (serarchCount > 1)
+                        camlQuery.ViewXml += "</And></Where></Query></View>";
+                    else
+                        camlQuery.ViewXml += "</Where></Query></View>";
+                }
+
+
+
+                ClientContext clientContext = new ClientContext(strSiteURL);
+
+                clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
+                Web web = clientContext.Web;
+                clientContext.Load(web);
+                User user = clientContext.Web.CurrentUser;
+                clientContext.Load(user);
+                clientContext.ExecuteQuery();
+
+                List list = web.Lists.GetByTitle(cBUlkPushListName);
+
+                ListItemCollection olists;
+
+
+                olists = list.GetItems(camlQuery);
+                // Console.WriteLine("List ID::  " + list.Id);
+                clientContext.Load(olists);
+                clientContext.ExecuteQuery();
+                List<BulkpushAPIDetails> respmsg = new List<BulkpushAPIDetails>();
+
+
+
+
+                foreach (ListItem oListItem in olists)
+                {
+                    try
+                    {
+
+                        respmsg.Add(new BulkpushAPIDetails
+                        {
+                            id = oListItem.Id.ToString(),
+                            Title = (oListItem["Title"] != null) ? oListItem["Title"].ToString() : "",
+                            status = (oListItem["status"] != null) ? oListItem["status"].ToString() : "",
+                            stateid = (oListItem["stateid"] != null) ? oListItem["stateid"].ToString() : "",
+                            roleid = (oListItem["roleid"] != null) ? oListItem["roleid"].ToString() : "",
+                            pushurl = (oListItem["pushurl"] != null) ? oListItem["pushurl"].ToString() : "",
+                            log = (oListItem["log"] != null) ? oListItem["log"].ToString() : "",
+                            Created = (oListItem["Created"] != null) ? oListItem["Created"].ToString() : "",
+                            Modified = (oListItem["Modified"] != null) ? oListItem["Modified"].ToString() : ""
+
+                        });
+                    }
+                    catch
+                    {
+
+
+                    }
+
+
+                }
+
+                return getHttpResponseMessage(JsonConvert.SerializeObject(respmsg));
+            }
+            catch (Exception ex)
+            {
+
+
+                return getErrormessage(ex.Message);
+            }
+
+
+
+        }
 
         [System.Web.Http.Route("api/Pipflow/BulkPushAPIS")]
         [System.Web.Http.HttpPost]
@@ -2890,7 +3041,7 @@ namespace SPPipAPi.Controllers
         }
         [System.Web.Http.Route("api/Pipflow/getGroupbyStates")]
         [System.Web.Http.HttpGet]
-        public HttpResponseMessage getGroupbyStates(string status,string roleids)
+        public HttpResponseMessage getGroupbyStates(string status, string roleids)
         {
             ClientContext clientContext = new ClientContext(strSiteURL);
             clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
@@ -2912,7 +3063,7 @@ namespace SPPipAPi.Controllers
                 camlQuery.ViewXml = "<View><Query><GroupBy Collapse=\"TRUE\" GroupLimit=\"200\"><FieldRef Name=\"stateid\"/><FieldRef Name=\"roleid\"/></GroupBy>"
                               + "<Where><And>" +
                              "<Eq><FieldRef Name='Status'/><Value Type='Text'>" + status + "</Value></Eq>"
-                            + "<In><FieldRef Name='roleid' /><Values>" 
+                            + "<In><FieldRef Name='roleid' /><Values>"
                             + strInRoleids + "</Values></In>"
                                   //   " " </ Value >
                                   // "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + 1 + "</Value></Eq>" 
