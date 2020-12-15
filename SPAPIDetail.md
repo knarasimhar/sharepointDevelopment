@@ -333,6 +333,32 @@ Response output:
           success: success
           fail:  Error messag
 # end 
+
+14.
+# Bulk push backend process details based on status ,stateid & roleid 
+ 
+SMAPLE PUSH API signature: 
+http://52.172.200.35:8111/sppipapigateway/api/Pipflow/spgetBulkpushDetails?status=5&stateid=5&roleid=2
+
+Method type : GET
+
+Request Params : status=5&stateid=5&roleid=2
+
+    status details :  static string FMRStatus = "-1", wfhstatus = "-2", FMRSuccessStatus = "9", FMRFailStatus = "7",
+                    wfhSuccessstatus = "4", wfhFailsstatus = "-4", CallbackStatus = "-5", DirectCallUrlStatus = "0", CallbackFailStatus = "5";
+       stateid : FMR state ids
+       roleid : fmr roleid 
+
+
+Response output:
+
+           [{"id":"9","Title":"29008_ Add FMR","url":null,"log":"","pushurl":"http://52.172.200.35:8111/sppipapigateway/api/Pipflow/spsetfmr?fmrid=29008&remarks=1.1.1.1&listname=pipflow1&AssignedTo= &FY=2021-22&stateid=5&fmrtype=1&roleid=1","status":"-1","stateid":"5","roleid":"1","Created":"12/2/2020 11:37:11 AM","Modified":"12/2/2020 11:37:11 AM"},{"id":"23","Title":"29009_ Add FMR","url":null,"log":"","pushurl":"http://52.172.200.35:8111/sppipapigateway/api/Pipflow/spsetfmr?fmrid=29009&remarks=1.1.1.2&listname=pipflow1&AssignedTo= &FY=2021-22&stateid=5&fmrtype=1&roleid=1","status":"-1","stateid":"5","roleid":"1","Created":"12/2/2020 11:37:11 AM","Modified":"12/2/2020 11:37:11 AM"}]
+          fail:  Error messag
+# end 
+
+
+
+
 # Start Suplimentary only replace controller Pipflow to SupliPipflow
 SUPLIMENTARY FMRS same as above all APIS so plz note all signature with replace of controller Pipflow to SupliPipflow
 # END suplimentart
