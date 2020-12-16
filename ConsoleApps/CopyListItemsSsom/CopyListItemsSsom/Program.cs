@@ -835,7 +835,7 @@ namespace CopyListItemsSsom
 
                                 oItem["roleid"] = roleid;
 
-                                if (isSuplimetary &&  oItem["sid"] != null)
+                                if (isSuplimetary)
                                 {
                                     if (QueryParam.sid != null) oItem["sid"] = QueryParam.sid.Value;
                                    
