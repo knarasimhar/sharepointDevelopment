@@ -2016,11 +2016,20 @@ namespace SPPipAPi.Controllers
                                     "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
                // if (roleid != "")
                     camlQuery.ViewXml += "</And>";
-                camlQuery.ViewXml += "<And>";
-                camlQuery.ViewXml += "<Eq><FieldRef Name='sid' /><Value Type='Number'>" + sid + "</Value></Eq>";
-                if (roleid != "")
+
+                if (roleid != "" && sid != "")
+                {
+                    camlQuery.ViewXml += "<And>";
+                    camlQuery.ViewXml += "<Eq><FieldRef Name='sid' /><Value Type='Number'>" + sid + "</Value></Eq>";
                     camlQuery.ViewXml += "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
-                camlQuery.ViewXml += "</And>";
+                    camlQuery.ViewXml += "</And>";
+                }
+                else if (roleid != "")
+                   camlQuery.ViewXml += "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+
+                else if(sid!="")
+                    camlQuery.ViewXml += "<Eq><FieldRef Name='sid' /><Value Type='Number'>" + sid + "</Value></Eq>";
+
                 camlQuery.ViewXml += "</And></Where></Query></View>";
                 List<pipflow> respmsg = new List<pipflow>();
                 if (ConfigurationManager.AppSettings["IS_SINGLE_TASK"] != null && ConfigurationManager.AppSettings["IS_SINGLE_TASK"].ToString().ToUpper() == "Y")

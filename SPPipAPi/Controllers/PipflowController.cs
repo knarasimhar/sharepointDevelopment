@@ -492,7 +492,7 @@ namespace SPPipAPi.Controllers
 
         [Route("api/Pipflow/spupdateFMR")]
         [HttpGet, HttpPost]
-        public HttpResponseMessage spupdateFMR(string Listname, string fmrSPid, string remarks, string status, string oldtitle = "", string newtitle = "")
+        public HttpResponseMessage spupdateFMR(string Listname, string fmrSPid, string remarks, string status)
         {
 
             // prepare site connection
@@ -500,7 +500,56 @@ namespace SPPipAPi.Controllers
             {
                 // global parameters
 
+                CamlQuery camlQuery = new CamlQuery();
+                camlQuery.ViewXml = "<View><RowLimit>1000</RowLimit></View>";
 
+                // prepare site connection
+                ClientContext clientContext = new ClientContext(strSiteURL);
+                clientContext.Credentials = new NetworkCredential(strUSER, strPWD);
+
+
+                List oList;
+                if (Listname != "")
+                    oList = clientContext.Web.Lists.GetByTitle(Listname);
+                else
+                    oList = clientContext.Web.Lists.GetByTitle("pipflow1");
+
+                ListItem targetListItem = oList.GetItemById(fmrSPid);
+
+
+
+                if (remarks != "")
+                    targetListItem["remarks"] = remarks;
+                if (status != "")
+                    targetListItem["status"] = status;
+
+                //oListItem["Body"] = "Hello World!";
+
+                targetListItem.Update();
+
+                clientContext.ExecuteQuery();
+
+            }
+            catch (Exception ex)
+            {
+                return getErrormessage(ex.Message);
+            }
+
+            return getSuccessmessage("success");
+        }
+
+
+        [Route("api/Pipflow/spupdateFMRTask")]
+        [HttpGet, HttpPost]
+        public HttpResponseMessage spupdateFMRTask(string Listname, string fmrSPid, string remarks, string status, string taskid, string oldtitle = "", string newtitle = "", string username = "", string roleid = "")
+        {
+
+            // prepare site connection
+            try
+            {
+                // global parameters
+
+                if (roleid == "") roleid = "1";
 
                 // prepare site connection
                 ClientContext clientContext = new ClientContext(strSiteURL);
@@ -515,34 +564,59 @@ namespace SPPipAPi.Controllers
 
                 ListItem targetListItem;
                 if (fmrSPid != null && fmrSPid != "")
+                { 
                     targetListItem = oList.GetItemById(fmrSPid);
-                else
-                {
-
-                    CamlQuery camlQuery = new CamlQuery();
-                    camlQuery.ViewXml = "<View><Query><Where><Eq><FieldRef Name='Title'/><Value Type='Text'>" + oldtitle + "</Value></Eq></Where></Query></View>";
-                    ListItemCollection oLists = oList.GetItems(camlQuery);
-                    clientContext.Load(oLists);
-                    clientContext.ExecuteQuery();
-                    if (oLists.Count == 0) return getSuccessmessage("Title:" + oldtitle + " Not found");
-                    targetListItem = oLists[0];
                     targetListItem["Title"] = newtitle;
+                    targetListItem["roleid"] = roleid;
+                    if (remarks != "")
+                        targetListItem["remarks"] = remarks;
+                    if (status != "")
+                        targetListItem["status"] = status;
+                    targetListItem.Update();
+                    clientContext.ExecuteQuery();
+                    if (username != "")
+                    {
+                        FieldUserValue[] userValueCollection = new FieldUserValue[1];
+
+                        User uUserName = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(username));
+                        clientContext.Load(uUserName);
+                        clientContext.ExecuteQuery();
+                        if (uUserName != null)
+                        {
+
+                            FieldUserValue fieldUserVal = new FieldUserValue();
+                            fieldUserVal.LookupId = uUserName.Id;
+                            //fieldUserVal.LookupValue = assignuser.LoginName;
+
+                            userValueCollection.SetValue(fieldUserVal, 0);
+
+
+                        }
+
+                        clientContext.Load(uUserName);
+                        targetListItem["currentAssignee"] = userValueCollection;
+                        targetListItem.Update();
+                        clientContext.ExecuteQuery();
+                        // for update task assigned to user details based on related item currenttaskid
+                        List oWFList = clientContext.Web.Lists.GetByTitle(cWfHListName);
+                        if (taskid != "")
+                        {
+                            ListItem targetWFListItem = oWFList.GetItemById(taskid);
+                            targetWFListItem["Assigned_x0020_To"] = userValueCollection;
+                            targetListItem["roleid"] = roleid;
+                            targetWFListItem.Update();
+                            clientContext.ExecuteQuery();
+                        }
+                        // clientContext.Load(targetWFListItem);
+
+
+                    }
+                   
+              
                 }
 
 
-                if (remarks != "")
-                    targetListItem["remarks"] = remarks;
-                if (status != "")
-                    targetListItem["status"] = status;
-
-
-
-
-                //oListItem["Body"] = "Hello World!";
-
-                targetListItem.Update();
-
-                clientContext.ExecuteQuery();
+              // clientContext.ExecuteQuery();
 
             }
             catch (Exception ex)
@@ -1009,6 +1083,7 @@ namespace SPPipAPi.Controllers
                         assignuser = clientContext.Web.EnsureUser(strDomainName + HttpUtility.UrlDecode(auser));
                         clientContext.Load(assignuser);
                         clientContext.ExecuteQuery();
+
                         if (assignuser != null)
                         {
 
@@ -2863,7 +2938,7 @@ namespace SPPipAPi.Controllers
                     if (serarchCount == 1) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
                     // if (serarchCount > 2) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
                     //  if (serarchCount == 0)
-                    if (status != "" && stateid != "" && roleid!="")
+                    if (status != "" && stateid != "" && roleid != "")
                         camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
                                       "<And><Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>" +
                                       "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>";
