@@ -29,7 +29,7 @@ namespace CopyListItemsSsom
         static string stateids = "", FMRStatus = "-1", wfhstatus = "-2", FMRSuccessStatus = "9", FMRFailStatus = "7",
                     wfhSuccessstatus = "4", wfhFailsstatus = "-4", CallbackStatus = "-5", DirectCallUrlStatus = "0", CallbackFailStatus = "5";
         static string cPipflowListName = "pipflow1";
-        static string stateid = "0", roleid = "0",sid="0";
+        static string stateid = "0", roleid = "0", sid = "0";
         static string cWfHListName = "workflow_history", bulkpushlistname = "bulkpushapis", url = "", ItemID = "", ItemStatus = "";
         static StringBuilder SBquery = new StringBuilder();
         static Hashtable _userstable = new Hashtable();
@@ -37,7 +37,7 @@ namespace CopyListItemsSsom
         static void Main(string[] args)
         {
 
-         //  Thread.Sleep(120000);
+            //  Thread.Sleep(120000);
             if (getConfigvalue("SITE_URL") != "")
                 strSiteURL = getConfigvalue("SITE_URL");
             if (getConfigvalue("DEST_SITE_URL") != "")
@@ -72,26 +72,42 @@ namespace CopyListItemsSsom
                 using (SPWeb web = site.OpenWeb())
                 {
 
-                   if (args[0] != null && args.Length == 1)
+                    if (args[0] != null && args.Length == 1)
                     // parllel process state wise 
                     {
-                           
 
-                               string fileName = filePath +  @"\STATE_" + args[0];
-                                System.IO.File.Create(fileName + ".started").Dispose();
-                              
-                              // befor verfiy any bulkpush uploaded by states
-                              CopyItemsThrougJSONFILE(web, args[0]);
 
-                                CopyItemsFromOneListToAnotherList(web, args[0]);
-                                System.IO.File.Delete(fileName + ".started");
-   
+                        string fileName = filePath + @"\STATE_" + args[0];
+                        System.IO.File.Create(fileName + ".started").Dispose();
+
+                        // befor verfiy any bulkpush uploaded by states
+                        CopyItemsThrougJSONFILE(web, args[0], "");
+
+                       // CopyItemsFromOneListToAnotherList(web, args[0]);
+                        System.IO.File.Delete(fileName + ".started");
+
                     }
+                    else if (args.Length == 3 && args[2] == "splitfile")
+                    // parllel process split given file to 100 lines state wise 
+                    {
+
+
+                        string fileName = filePath + @"\STATE_" + args[0];
+                       // System.IO.File.Create(fileName + ".started").Dispose();
+
+                        // befor verfiy any bulkpush uploaded by states
+                        CopyItemsThrougJSONFILE(web, args[0], args[1]);
+
+                        CopyItemsFromOneListToAnotherList(web, args[0], args[1]);
+                        //System.IO.File.Delete(fileName + ".started");
+
+                    }
+
                     else if (args[0].ToLower() == "addfmr")
                     {
-                        if(args[2]==null && args[2] != "")
-                                   for (int i = 1; i <= 39; i++)
-                                    AddFMRCopyItems(web, args[1], "", i.ToString());
+                        if (args[2] == null && args[2] != "")
+                            for (int i = 1; i <= 39; i++)
+                                AddFMRCopyItems(web, args[1], "", i.ToString());
                         else
                             AddFMRCopyItems(web, args[1], "", args[2].ToString());
                         //  AddFMRCopyItems(web, args[1], "", "7");
@@ -100,10 +116,10 @@ namespace CopyListItemsSsom
                     {
                         strPUSHType = "nextlevel";
                         if (args[3] == null && args[3] != "")
-                        { 
-                           
-                                  for (int i = 1; i <= 39; i++)
-                                   CopyItems(web, args[1], args[2], i.ToString());
+                        {
+
+                            for (int i = 1; i <= 39; i++)
+                                CopyItems(web, args[1], args[2], i.ToString());
                         }
                         else
                             CopyItems(web, args[1], args[2], args[3].ToString());
@@ -114,12 +130,12 @@ namespace CopyListItemsSsom
                     // CopyItems(web, "Contacts", "Contacts");
                 }
             }
-                 /*   Console.WriteLine("X => {0}", x);
-                    Thread.Sleep(5000);
-                }
-            })).Start();*/
+            /*   Console.WriteLine("X => {0}", x);
+               Thread.Sleep(5000);
+           }
+       })).Start();*/
         }
-        public static void CopyItemsFromOneListToAnotherList(SPWeb web, string stateid)
+        public static void CopyItemsFromOneListToAnotherList(SPWeb web, string stateid,string splitid)
         {
             try
             {
@@ -128,52 +144,52 @@ namespace CopyListItemsSsom
                 destsite = new SPSite(strDestSiteURL);
                 destweb = destsite.OpenWeb();
                 sourceList = web.Lists[bulkpushlistname];
-                
-               /* DateTime Listdt = sourceList.LastItemModifiedDate;
-                TimeSpan t =  DateTime.Now.Subtract(Listdt);
-               if (t.TotalSeconds > 30) { Console.WriteLine("NO bulkpush records... "); return; }*/
+
+                /* DateTime Listdt = sourceList.LastItemModifiedDate;
+                 TimeSpan t =  DateTime.Now.Subtract(Listdt);
+                if (t.TotalSeconds > 30) { Console.WriteLine("NO bulkpush records... "); return; }*/
                 destList = destweb.Lists[cWfHListName];
                 pipflow1 = destweb.Lists[cPipflowListName];
-                string[] strFMRStatuses = { "0","-5", "-55", "-2", "-1", "-4", "-3"};
+                string[] strFMRStatuses = { "0", "-5", "-55", "-2", "-1", "-4", "-3" };
                 //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
                 foreach (string strFmrstatus in strFMRStatuses)
                 {
                     SPQuery SPquery = new SPQuery();
-                  /*   if (strFmrstatus == "-1")
-                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-1</Value></Eq></And></Where>", stateid, strFmrstatus);
-                    else if (strFmrstatus == "-2")
-                        SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And></Where>";
-                    //  SPquery.Query = "<Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq></Where>";// <Eq><FieldRef Name='status'/><Value Type='Number'>-2</Value></Eq></And></Where>";
+                    /*   if (strFmrstatus == "-1")
+                          SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-1</Value></Eq></And></Where>", stateid, strFmrstatus);
+                      else if (strFmrstatus == "-2")
+                          SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And></Where>";
+                      //  SPquery.Query = "<Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq></Where>";// <Eq><FieldRef Name='status'/><Value Type='Number'>-2</Value></Eq></And></Where>";
 
-                    else if (strFmrstatus == "-3")
-                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-3</Value></Eq></And></Where>", stateid, strFmrstatus);
+                      else if (strFmrstatus == "-3")
+                          SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-3</Value></Eq></And></Where>", stateid, strFmrstatus);
 
-                    else if (strFmrstatus == "-4")
-                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-4</Value></Eq></And></Where>", stateid, strFmrstatus);
+                      else if (strFmrstatus == "-4")
+                          SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-4</Value></Eq></And></Where>", stateid, strFmrstatus);
 
-                    else if (strFmrstatus == "-5")
-                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-5</Value></Eq></And></Where>", stateid, strFmrstatus);
+                      else if (strFmrstatus == "-5")
+                          SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-5</Value></Eq></And></Where>", stateid, strFmrstatus);
 
-                    else if (strFmrstatus == "-6")
-                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-6</Value></Eq></And></Where>", stateid, strFmrstatus);
-                  */
+                      else if (strFmrstatus == "-6")
+                          SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-6</Value></Eq></And></Where>", stateid, strFmrstatus);
+                    */
 
-                 
-                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And></Where>", stateid, strFmrstatus);
-                    
-                   // SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus1 + "</Value></Eq></And></Where>";
-                   // SPquery.RowLimit = 2000;
+
+                    SPquery.Query = string.Format("<Where><And><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And><Eq><FieldRef Name='splitid'/><Value Type='Text'>{2}</Value></Eq></And></Where>", stateid, strFmrstatus, splitid);
+
+                    // SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus1 + "</Value></Eq></And></Where>";
+                    // SPquery.RowLimit = 2000;
                     int i = 1, j = 1, k = 1, ii = 1;
                     destweb.AllowUnsafeUpdates = true;
                     workflowhistoryGuid = destList.ID; pipflow1Guid = pipflow1.ID; bulkpushapisGuid = sourceList.ID;
 
 
                     string strColumnFiels = "", strQuerry = "";
-                     SBquery.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Batch>");
+                    SBquery.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><Batch>");
 
                     strColumnFiels = "<?xml version=\"1.0\" encoding=\"UTF-8\"?><Batch onError=\"Return\">!CONTENT!</Batch>";
 
-                  //  SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus1 + "</Value></Eq></And></Where>";
+                    //  SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus1 + "</Value></Eq></And></Where>";
 
                     SPListItemCollection SPLists = sourceList.GetItems(SPquery);
                     Console.WriteLine(" Total list count for " + SPLists.Count.ToString());
@@ -259,7 +275,7 @@ namespace CopyListItemsSsom
 
                                     try
                                     {
-                                        
+
                                         // Create new stopwatch.
                                         Stopwatch stopwatch = new Stopwatch();
                                         stopwatch.Start();
@@ -280,14 +296,14 @@ namespace CopyListItemsSsom
                             }
                             catch { }
                         }
-                        else if (ItemStatus == CallbackStatus) 
+                        else if (ItemStatus == CallbackStatus)
                         {
 
 
                             try
 
                             {
-                                Console.WriteLine( "STATUS " + strFmrstatus + " SNO " + k + " ID:" + ItemID + " Call back URL request -- " + " stateid:" + stateid);
+                                Console.WriteLine("STATUS " + strFmrstatus + " SNO " + k + " ID:" + ItemID + " Call back URL request -- " + " stateid:" + stateid);
 
                                 //  targetListItem["pushurl"] = resp.url.ToString().Replace("sppipapitestlocal", "sppipapitesting");
 
@@ -356,42 +372,42 @@ namespace CopyListItemsSsom
 
                                 //  targetListItem["pushurl"] = resp.url.ToString().Replace("sppipapitestlocal", "sppipapitesting");
 
-                              
-                                    SBquery.AppendFormat("<Method ID=\"{0}\">" +
-                                          "<SetList>{1}</SetList>" +
-                                          "<SetVar Name=\"ID\">{2}</SetVar>" +
-                                           //for update //
-                                           //    "<SetVar Name=\"Cmd\">Save</SetVar>", _destListname, listGuid, item.ID)
-                                           "<SetVar Name=\"Cmd\">Save</SetVar>", bulkpushlistname, bulkpushapisGuid, ItemID);
+
+                                SBquery.AppendFormat("<Method ID=\"{0}\">" +
+                                      "<SetList>{1}</SetList>" +
+                                      "<SetVar Name=\"ID\">{2}</SetVar>" +
+                                       //for update //
+                                       //    "<SetVar Name=\"Cmd\">Save</SetVar>", _destListname, listGuid, item.ID)
+                                       "<SetVar Name=\"Cmd\">Save</SetVar>", bulkpushlistname, bulkpushapisGuid, ItemID);
 
 
 
 
-                                    try
-                                    {
+                                try
+                                {
 
 
-                                          Stopwatch stopwatch = new Stopwatch();
-                                            stopwatch.Start();
-                                            Console.WriteLine(" Direct web request  URL :" + url);
-                                            DoWebGetRequest(url, "");
-                                            stopwatch.Stop();
-                                            Console.WriteLine(" DoWebGetRequest Time elapsed: {0}", stopwatch.Elapsed);
-                                            SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "status", wfhSuccessstatus);
-                                            SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "log", "SSOM Direct web request success");
-                                       
-                                    }
-                                    catch (Exception ex)
-                                    {
+                                    Stopwatch stopwatch = new Stopwatch();
+                                    stopwatch.Start();
+                                    Console.WriteLine(" Direct web request  URL :" + url);
+                                    DoWebGetRequest(url, "");
+                                    stopwatch.Stop();
+                                    Console.WriteLine(" DoWebGetRequest Time elapsed: {0}", stopwatch.Elapsed);
+                                    SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "status", wfhSuccessstatus);
+                                    SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "log", "SSOM Direct web request success");
 
-                                        SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "status", CallbackFailStatus);
-                                        SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "log", "SSOM Direct web request fail " + ex.Message);
-                                    }
-                                    SBquery.Append("</Method>");
-                                    //spsetFMRDBBulk(QueryParam.fmrid.Value, QueryParam.remarks.Value, "", ref BulkclientContext, QueryParam.assignedto.Value, QueryParam.fy.Value, QueryParam.stateid.Value, QueryParam.fmrtype.Value, "");
-                                    // oItem["pushurl"] = BulkAPI.callbackurl; 
+                                }
+                                catch (Exception ex)
+                                {
 
-                                
+                                    SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "status", CallbackFailStatus);
+                                    SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "log", "SSOM Direct web request fail " + ex.Message);
+                                }
+                                SBquery.Append("</Method>");
+                                //spsetFMRDBBulk(QueryParam.fmrid.Value, QueryParam.remarks.Value, "", ref BulkclientContext, QueryParam.assignedto.Value, QueryParam.fy.Value, QueryParam.stateid.Value, QueryParam.fmrtype.Value, "");
+                                // oItem["pushurl"] = BulkAPI.callbackurl; 
+
+
 
                             }
                             catch { }
@@ -460,17 +476,17 @@ namespace CopyListItemsSsom
                         Thread.Sleep(5000);
                     }
                     destweb.AllowUnsafeUpdates = false;
-                  
+
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine("Error message" + ex.Message);
-               // Console.ReadLine();
+                // Console.ReadLine();
             }
             //Console.ReadLine();
         }
-        static private void spsetFMRDBBulk(string fmrid, string remarks,string AssignedTo = "", string FY = "", string stateid = "", string fmrtype = "", string roleid = "")
+        static private void spsetFMRDBBulk(string fmrid, string remarks, string AssignedTo = "", string FY = "", string stateid = "", string fmrtype = "", string roleid = "")
         {
             /*  SPListItem newItem = destList.Items.Add();
                          //for (int i = 0; i < item.Fields.Count; i++)
@@ -500,7 +516,7 @@ namespace CopyListItemsSsom
 
             }
             oListItem["roleid"] = roleid;
-            if(sid!="0")
+            if (sid != "0")
                 oListItem["sid"] = sid;
             oListItem["FY"] = FY;
             oListItem["stateid"] = stateid;
@@ -638,22 +654,22 @@ namespace CopyListItemsSsom
             SBquery.AppendFormat("<Method ID=\"{0}\">" +
                   "<SetList>{1}</SetList>" +
                   "<SetVar Name=\"ID\">{2}</SetVar>" +
-                 
+
             //for update //
             //    "<SetVar Name=\"Cmd\">Save</SetVar>", _destListname, listGuid, item.ID)
             "<SetVar Name=\"Cmd\">Save</SetVar>", cWfHListName, workflowhistoryGuid, "New");
             string strTitle = "MAIN task";
             if (TASKTYPE == "2")
             {
-             
+
                 strTitle = "Additional Review";
             }
             else if (TASKTYPE == "3")
             {
-              strTitle = "ROP";
+                strTitle = "ROP";
             }
             else if (areviewuserTo != "")
-            {  strTitle = "sub task"; }
+            { strTitle = "sub task"; }
 
 
             SBquery.AppendFormat("<SetVar Name=\"urn:schemas-microsoft-com:office:office#{0}\">{1}</SetVar>", "Title", strTitle);
@@ -725,27 +741,27 @@ namespace CopyListItemsSsom
         static private void AddFMRCopyItems(SPWeb web, string strCreatedby, string strAssignedTo, string stateid)
         {
 
-          
+
             //SPList SList = web.Lists[strSOurcelist];
             SPList DList = web.Lists[bulkpushlistname];
             SPQuery SPquery = new SPQuery();
             //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
             SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='Status'/><Value Type='Text'>Not Started</Value></Eq></And></Where>";
             SPquery.RowLimit = 100;
-           // SPListItemCollection SPLists = SList.GetItems(SPquery);
-           // Console.WriteLine(" Total list count for " + SPLists.Count.ToString());
-          
-            for(int i=1;i<=2000;i++)
+            // SPListItemCollection SPLists = SList.GetItems(SPquery);
+            // Console.WriteLine(" Total list count for " + SPLists.Count.ToString());
+
+            for (int i = 1; i <= 2000; i++)
             {
                 SPListItem newItem = DList.Items.Add();
-               // ItemID = i.ToString();
+                // ItemID = i.ToString();
                 //ItemStatus = item["Status"].ToString();
 
 
 
                 //for (int i = 0; i < item.Fields.Count; i++)
                 //   newItem[newItem.Fields[i].InternalName] = item[newItem.Fields[i].InternalName];
-                newItem["Title"] = "ADD FMR_" + stateid  + "_" + i.ToString();
+                newItem["Title"] = "ADD FMR_" + stateid + "_" + i.ToString();
                 newItem["stateid"] = stateid;
                 if (strPUSHType == "addfmr")
                 {
@@ -764,7 +780,7 @@ namespace CopyListItemsSsom
                         newItem["status"] = "-3";
                     }
                 }
-               
+
                 var watch1 = System.Diagnostics.Stopwatch.StartNew();
                 watch1.Start();
                 // the code that you want to measure comes here
@@ -772,15 +788,16 @@ namespace CopyListItemsSsom
                 watch1.Stop();
                 var elapsedMs1 = watch1.Elapsed;
                 Console.WriteLine(" SNO id " + i + " State ID " + stateid + " Bulk push SSOM call " + i.ToString() + " Time Take " + elapsedMs1);
-                
+
             }
 
         }
-        static private void CopyItemsThrougJSONFILE(SPWeb web, string stateid)
+        static private void CopyItemsThrougJSONFILE(SPWeb web, string stateid, string _Splitfile)
         {
             // below loop is for Verify the FIle is posted or not
             try
             {
+                List<BulkpushAPIS> ListBulkpushAPIS;
                 if (getConfigvalue("UPLOAD_FILE_PATH") != "")
                 {
 
@@ -790,111 +807,187 @@ namespace CopyListItemsSsom
                         filePath += @"\suppli";
                     else
                         filePath += @"\normal";
-                    if (!System.IO.Directory.Exists(filePath)) return;
-                    if (!System.IO.Directory.Exists(filePath + @"\processed\")) System.IO.Directory.CreateDirectory(filePath + @"\processed\");
+                    SPList DList = web.Lists[bulkpushlistname];
+
+
+                    if (_Splitfile == "")
+                    {
+                        if (!System.IO.Directory.Exists(filePath)) return;
+                        if (!System.IO.Directory.Exists(filePath + @"\processed\")) System.IO.Directory.CreateDirectory(filePath + @"\processed\");
                         DirectoryInfo di = new DirectoryInfo(filePath);
 
-                    foreach (var fi in di.GetFiles())
-                    {
-                        // Console.WriteLine(fi.Name);
-                        if (fi.Name.EndsWith("_" + stateid + ".json"))
+                        foreach (var fi in di.GetFiles())
                         {
-                           
-                            StreamReader sr = new StreamReader(filePath + @"\" + fi.Name);
-                            string jsonString = sr.ReadToEnd();
-                            sr.Dispose();
-                            sr.Close();
-                            fi.MoveTo(filePath + @"\processed\" + fi.Name);
-                          
-
-
-                            SPList DList = web.Lists[bulkpushlistname];
-                            List<BulkpushAPIS> ListBulkpushAPIS = Newtonsoft.Json.JsonConvert.DeserializeObject<List<BulkpushAPIS>>(jsonString);
-
-                            int SNO = 1;
-                            foreach (BulkpushAPIS BulkAPI in ListBulkpushAPIS)
+                            // Console.WriteLine(fi.Name);
+                            if (fi.Name.EndsWith("_" + stateid + ".json"))
                             {
-                                SPListItem oItem = DList.Items.Add();
 
-
-                                oItem["Title"] = BulkAPI.Title;
-                                oItem["pushurl"] = BulkAPI.url;
-
-                                var uri = new Uri(BulkAPI.url);
-                                var query = HttpUtility.ParseQueryString(uri.Query);
-                                dynamic QueryParams, QueryParam;
-                                QueryParams = JArray.Parse(ClsGeneral.GetJsonStringFromQueryString(query.ToString().ToLower()));
-
-                                QueryParam = QueryParams[0];
-
-                                if (QueryParam.stateid != null) stateid = QueryParam.stateid.Value;
-
-                                oItem["stateid"] = stateid;
-
-                                if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
-
-                                oItem["roleid"] = roleid;
-
-                                if (isSuplimetary)
+                                StreamReader sr = new StreamReader(filePath + @"\" + fi.Name);
+                                string jsonString = sr.ReadToEnd();
+                                sr.Dispose();
+                                sr.Close();
+                                fi.MoveTo(filePath + @"\processed\" + fi.Name);
+                                ListBulkpushAPIS = Newtonsoft.Json.JsonConvert.DeserializeObject<List<BulkpushAPIS>>(jsonString);
+                                
+                                //start below logic implement for more performace date 9/1/2021 split file to more files
+                                int isplitCount = 100; 
+                                if (getConfigvalue("isplitCount") != "") isplitCount = int.Parse(getConfigvalue("isplitCount"));
+                                if (getConfigvalue("issplitfileandprocess").ToUpper() == "Y" && ListBulkpushAPIS.Count > isplitCount)
                                 {
-                                    if (QueryParam.sid != null) oItem["sid"] = QueryParam.sid.Value;
-                                   
+                                    StringBuilder strSplitFMRS = new StringBuilder();
+                                    int i = 1;
+                                    foreach (BulkpushAPIS item in ListBulkpushAPIS)
+                                    {
+                                        if (!System.IO.Directory.Exists(filePath + @"\splitprocessed\")) System.IO.Directory.CreateDirectory(filePath + @"\splitprocessed\");
+
+                                        strSplitFMRS.Append(Newtonsoft.Json.JsonConvert.SerializeObject(item) + ",");
+                                        if (i % isplitCount == 0)
+                                        {
+                                            string strSPlitfile = "";// fi.Name + "_" + (i - int.Parse("100")) + "_" + i.ToString() + ".json";
+                                            string strFilName = fi.Name + "_" + (i - isplitCount) + "_" + i.ToString() + ".json"; ;
+                                            strSPlitfile = filePath + @"\splitprocessed\" + @"\" + strFilName;
+                                            Console.WriteLine("Main file split into Name to: " + strSPlitfile);
+                                            using (StreamWriter sw = System.IO.File.CreateText(strSPlitfile))
+                                            {
+                                                sw.Write("[" + strSplitFMRS.ToString().TrimEnd(',') +"]" );
+                                            }
+                                            strSplitFMRS.Clear();
+
+                                            // need to run process console here for same state with different file
+                                            try
+                                            {
+                                               // ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile");
+                                                ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath"));
+                                                //info.UseShellExecute = true;
+                                                info.Arguments = stateid + " " + strFilName + " splitfile";
+                                                Process.Start(info);
+                                                Console.WriteLine("ProcessStartInfo CALL Data " + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strFilName + " splitfile");
+                                            }
+                                            catch(Exception ex) { Console.WriteLine("ProcessStartInfo CALL Exception " + ex.Message + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile"); }
+                                        }
+
+                                        i++;
+                                    }
+                                    // for last fmrs above 100 last 
+                                    if (strSplitFMRS.ToString() != "")
+                                    {
+                                        string strSPlitfile = "";// fi.Name + "_" + (i - int.Parse("100")) + "_" + i.ToString() + ".json";
+                                        string strFilName = fi.Name + "_" + (i - isplitCount) + "_" + i.ToString() + ".json"; ;
+                                        strSPlitfile = filePath + @"\splitprocessed\" + @"\" + strFilName;
+                                        Console.WriteLine("Last file split into Name to: " + strSPlitfile);
+
+
+                                        using (StreamWriter sw = System.IO.File.CreateText(strSPlitfile))
+                                        {
+                                            sw.Write("[" + strSplitFMRS.ToString().TrimEnd(',') + "]");
+                                        }
+                                        strSplitFMRS.Clear();
+
+                                        // need to run process console here for same state with different file
+                                        try
+                                        {
+                                            // ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile");
+                                            ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath"));
+                                            //info.UseShellExecute = true;
+                                            info.Arguments = stateid + " " + strFilName + " splitfile";
+                                            Process.Start(info);
+                                            Console.WriteLine("ProcessStartInfo CALL Data " + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strFilName + " splitfile");
+                                        }
+                                        catch (Exception ex) { Console.WriteLine("ProcessStartInfo CALL Exception " + ex.Message + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile"); }
+
+                                    }
+                                    return;
+
                                 }
-
-                                if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsetfmr?"))
-                                {
-                                    oItem["status"] = "-1";
-                                }
-                                else if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsettaskitembyid?"))
-                                {
-                                    oItem["status"] = "-2";
-                                }// below two loop for suplimentary insertion to 
-                                else if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsetfmr?"))
-                                {
-                                    oItem["status"] = "-3";
-                                }
-                                else if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsettaskitembyid?"))
-                                {
-                                    oItem["status"] = "-4";
-                                }
-
-                                var watch1 = System.Diagnostics.Stopwatch.StartNew();
-                                watch1.Start();
-                                // the code that you want to measure comes here
-                                oItem.Update();
-                                watch1.Stop();
-                                var elapsedMs1 = watch1.Elapsed;
-                                Console.WriteLine("JSON CALL State ID " + stateid + " Bulk push SSOM JSON call  " + SNO + " Title " + BulkAPI.Title + " Time Take " + elapsedMs1);
-                                SNO++;
-                                //  if (SNO % 2000 == 0) break;
-
-                                processedFIle = fi.Name;
-                               
-
-                               
                             }
-                          
-                           
+                        }
+                    }
+
+                    //END below logic implement for more performace date 9/1/2021 split file to more files
+                    //    return;
+                    else
+                    {
+                        StreamReader sr = new StreamReader(filePath + @"\splitprocessed\" + _Splitfile );
+                        string jsonString = sr.ReadToEnd();
+                        sr.Dispose();
+                        sr.Close();
+                        ListBulkpushAPIS = Newtonsoft.Json.JsonConvert.DeserializeObject<List<BulkpushAPIS>>(jsonString);
+
+                        int SNO = 1;
+                        foreach (BulkpushAPIS BulkAPI in ListBulkpushAPIS)
+                        {
+                            SPListItem oItem = DList.Items.Add();
+
+
+                            oItem["Title"] = BulkAPI.Title;
+                            oItem["pushurl"] = BulkAPI.url;
+
+                            var uri = new Uri(BulkAPI.url);
+                            var query = HttpUtility.ParseQueryString(uri.Query);
+                            dynamic QueryParams, QueryParam;
+                            QueryParams = JArray.Parse(ClsGeneral.GetJsonStringFromQueryString(query.ToString().ToLower()));
+
+                            QueryParam = QueryParams[0];
+
+                            if (QueryParam.stateid != null) stateid = QueryParam.stateid.Value;
+
+                            oItem["stateid"] = stateid;
+
+                            if (QueryParam.roleid != null) roleid = QueryParam.roleid.Value;
+
+                            oItem["roleid"] = roleid;
+
+                            if (isSuplimetary)
+                            {
+                                if (QueryParam.sid != null) oItem["sid"] = QueryParam.sid.Value;
+
+                            }
+
+                            if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsetfmr?"))
+                            {
+                                oItem["status"] = "-1";
+                            }
+                            else if (BulkAPI.url.ToString().ToLower().Contains("/pipflow/spsettaskitembyid?"))
+                            {
+                                oItem["status"] = "-2";
+                            }// below two loop for suplimentary insertion to 
+                            else if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsetfmr?"))
+                            {
+                                oItem["status"] = "-3";
+                            }
+                            else if (BulkAPI.url.ToString().ToLower().Contains("/suplipipflow/spsettaskitembyid?"))
+                            {
+                                oItem["status"] = "-4";
+                            }
+                            if (_Splitfile != "")
+                                oItem["splitid"] = _Splitfile;
+                            var watch1 = System.Diagnostics.Stopwatch.StartNew();
+                            watch1.Start();
+                            // the code that you want to measure comes here
+                            oItem.Update();
+                            watch1.Stop();
+                            var elapsedMs1 = watch1.Elapsed;
+                            Console.WriteLine("JSON CALL State ID " + stateid + " Bulk push SSOM JSON call  " + SNO + " Title " + BulkAPI.Title + " Time Take " + elapsedMs1);
+                            SNO++;
+                            //  if (SNO % 2000 == 0) break;
+
+                           // processedFIle = fi.Name;
 
 
                         }
-                
-                      // if (processedFIle != "") { System.IO.File.Delete(filePath + @"/" + processedFIle); break;  }
-                      
-
                     }
-                    
+
                 }
 
+                // if (processedFIle != "") { System.IO.File.Delete(filePath + @"/" + processedFIle); break;  }
 
-                else return;
             }
-            catch(Exception ex) { Console.WriteLine("JSON CALL Exception " + ex.Message); return; }
-            }
+            catch (Exception ex) { Console.WriteLine("JSON CALL Exception " + ex.Message); return; }
+        }
         static private void CopyItems(SPWeb web, string strCreatedby, string strAssignedTo, string stateid)
         {
 
-             SPList SList = web.Lists[cWfHListName];
+            SPList SList = web.Lists[cWfHListName];
             SPList DList = web.Lists[bulkpushlistname];
             SPQuery SPquery = new SPQuery();
             //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
@@ -917,7 +1010,7 @@ namespace CopyListItemsSsom
                 newItem["stateid"] = item["stateid"];
                 if (isSuplimetary && item["sid"] != null)
                     sid = (int.Parse(item["sid"].ToString()) + 1).ToString();
-                    if (strPUSHType == "addfmr")
+                if (strPUSHType == "addfmr")
                 {
                     newItem["pushurl"] = string.Format("http://52.172.200.35:8111/pipflowsitetesting/api/Pipflow/spsetfmr?fmrid=bulkpush_{0}&remarks=U.8.1.5" +
                         "&listname=pipflow1&AssignedTo=spm&FY=2021-22" +
@@ -940,7 +1033,7 @@ namespace CopyListItemsSsom
                       "&sid={6}&callbackurl=", ItemID, strCreatedby, strAssignedTo, item["relateditem"], item["stateid"], item["roleid"], sid);
                         newItem["status"] = "-4";
                     }
-                    
+
                 }
                 var watch1 = System.Diagnostics.Stopwatch.StartNew();
                 watch1.Start();
