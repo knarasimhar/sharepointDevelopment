@@ -1954,7 +1954,7 @@ namespace SPPipAPi.Controllers
                 if (status == null) status = "";
                 // global parameters
                 Taskuser = Taskuser == null ? "" : Taskuser;
-                ReleatedItems = ReleatedItems == null ? "" : "," + ReleatedItems + ",";
+                ReleatedItems = ReleatedItems == null ? "" :  ReleatedItems;
 
                 CamlQuery camlQuery = new CamlQuery();
                 camlQuery.ViewXml = "<View><RowLimit>50000</RowLimit></View>";
@@ -1969,15 +1969,27 @@ namespace SPPipAPi.Controllers
                 camlQuery.ViewXml = "<View><RowLimit>50000</RowLimit></View>";
 
                 camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>";
-                if (roleid != "")
-                    camlQuery.ViewXml += "<And>";
-                camlQuery.ViewXml += "<Eq><FieldRef Name='tasktype' /><Value Type='Number'>" + TaskType + "</Value></Eq>" +
-                                    "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
-                if (roleid != "")
-                    camlQuery.ViewXml += "</And>";
-                if (roleid != "")
-                    camlQuery.ViewXml += "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                if (ReleatedItems != "")
+                {
+
+                    camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>";
+                    camlQuery.ViewXml += "<Eq><FieldRef Name='relateditem' /><Value Type='Text'>" + ReleatedItems + "</Value></Eq>";
+                    camlQuery.ViewXml += "</Where></Query></View>";
+
+                }
+                else
+                {
+                    if (roleid != "")
+                        camlQuery.ViewXml += "<And>";
+                    camlQuery.ViewXml += "<Eq><FieldRef Name='tasktype' /><Value Type='Number'>" + TaskType + "</Value></Eq>" +
+                                        "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                    if (roleid != "")
+                        camlQuery.ViewXml += "</And>";
+                    if (roleid != "")
+                        camlQuery.ViewXml += "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                
                 camlQuery.ViewXml += "</And></Where></Query></View>";
+                }
                 List<pipflow> respmsg = new List<pipflow>();
                 if (ConfigurationManager.AppSettings["IS_SINGLE_TASK"] != null && ConfigurationManager.AppSettings["IS_SINGLE_TASK"].ToString().ToUpper() == "Y")
                 {
@@ -2066,8 +2078,8 @@ namespace SPPipAPi.Controllers
                     }
 
                     // related item to for listing the data filtering
-                    if (ReleatedItems != "" && ReleatedItems.Contains("," + RelItem + ",") != true)
-                        continue;
+                   // if (ReleatedItems != "" && ReleatedItems.Contains("," + RelItem + ",") != true)
+                     //   continue;
 
 
                     if (status != "" && oListItem["Status"].ToString().ToLower() != status.ToLower()) continue;

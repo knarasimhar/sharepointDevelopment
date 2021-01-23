@@ -18,7 +18,7 @@ namespace CopyListItemsSsom
 {
     class Program
     {
-
+        
         static String strSiteURL = "http://sharepoint2/sites/teamsiteex/PipFlowSite", strDestSiteURL = "", strUSER = "spuser2", strPWD = "User@123#", strPUSHType = "addfmr";
         static string strDomainName = ClsGeneral.getConfigvalue("DomainName");
         static SPSite destsite;
@@ -36,9 +36,9 @@ namespace CopyListItemsSsom
         static bool isSuplimetary = false;
         static void Main(string[] args)
         {
-
-            //  Thread.Sleep(120000);
-            if (getConfigvalue("SITE_URL") != "")
+         
+                //  Thread.Sleep(120000);
+                if (getConfigvalue("SITE_URL") != "")
                 strSiteURL = getConfigvalue("SITE_URL");
             if (getConfigvalue("DEST_SITE_URL") != "")
                 strDestSiteURL = getConfigvalue("DEST_SITE_URL");
@@ -71,7 +71,7 @@ namespace CopyListItemsSsom
 
                 using (SPWeb web = site.OpenWeb())
                 {
-
+                     Boolean isStateFileAdded = false;
                     if (args[0] != null && args.Length == 1)
                     // parllel process state wise 
                     {
@@ -81,9 +81,9 @@ namespace CopyListItemsSsom
                         System.IO.File.Create(fileName + ".started").Dispose();
 
                         // befor verfiy any bulkpush uploaded by states
-                        CopyItemsThrougJSONFILE(web, args[0], "");
+                        CopyItemsThrougJSONFILE(web, args[0], "",ref isStateFileAdded);
 
-                       // CopyItemsFromOneListToAnotherList(web, args[0]);
+                       if(!isStateFileAdded) CopyItemsFromOneListToAnotherList(web, args[0],"");
                         System.IO.File.Delete(fileName + ".started");
 
                     }
@@ -93,16 +93,32 @@ namespace CopyListItemsSsom
 
 
                         string fileName = filePath + @"\STATE_" + args[0];
-                       // System.IO.File.Create(fileName + ".started").Dispose();
+                      //  System.IO.File.Create(fileName + ".started").Dispose();
 
                         // befor verfiy any bulkpush uploaded by states
-                        CopyItemsThrougJSONFILE(web, args[0], args[1]);
+                        CopyItemsThrougJSONFILE(web, args[0], args[1], ref isStateFileAdded);
 
-                        CopyItemsFromOneListToAnotherList(web, args[0], args[1]);
-                        //System.IO.File.Delete(fileName + ".started");
+                      //  CopyItemsFromOneListToAnotherList(web, args[0], args[1]);
+
+                      //  System.IO.File.Delete(fileName + ".started");
 
                     }
+                    else if (args.Length == 3 && args[2] == "splitfileprocess")
+                    // parllel process split given file to 100 lines state wise 
+                    {
 
+
+                        string fileName = filePath + @"\STATE_" + args[0];
+                        //  System.IO.File.Create(fileName + ".started").Dispose();
+
+                        // befor verfiy any bulkpush uploaded by states
+                       // CopyItemsThrougJSONFILE(web, args[0], args[1], ref isStateFileAdded);
+
+                        CopyItemsFromOneListToAnotherList(web, args[0], args[1]);
+
+                        //  System.IO.File.Delete(fileName + ".started");
+
+                    }
                     else if (args[0].ToLower() == "addfmr")
                     {
                         if (args[2] == null && args[2] != "")
@@ -139,7 +155,7 @@ namespace CopyListItemsSsom
         {
             try
             {
-
+                bool isUICallback = false;
                 Console.WriteLine(" Processing state is   " + stateid + " From List " + getConfigvalue("sourceListname") + " To List  " + getConfigvalue("destinationListname"));
                 destsite = new SPSite(strDestSiteURL);
                 destweb = destsite.OpenWeb();
@@ -150,7 +166,19 @@ namespace CopyListItemsSsom
                 if (t.TotalSeconds > 30) { Console.WriteLine("NO bulkpush records... "); return; }*/
                 destList = destweb.Lists[cWfHListName];
                 pipflow1 = destweb.Lists[cPipflowListName];
-                string[] strFMRStatuses = { "0", "-5", "-55", "-2", "-1", "-4", "-3" };
+                string[] strFMRStatuses = { "0", "-5", "-55" };
+
+                if(splitid!="")
+                {
+                   
+                    strFMRStatuses = strFMRStatuses.Append("-2").ToArray();
+                    strFMRStatuses = strFMRStatuses.Append("-1").ToArray();
+                    strFMRStatuses = strFMRStatuses.Append("-4").ToArray();
+                    strFMRStatuses = strFMRStatuses.Append("-3").ToArray();
+                }
+             
+
+               
                 //oQuery.ViewXml = ("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + sateid + "</Value></Eq></Where></Query></View>");
                 foreach (string strFmrstatus in strFMRStatuses)
                 {
@@ -174,11 +202,14 @@ namespace CopyListItemsSsom
                           SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>-6</Value></Eq></And></Where>", stateid, strFmrstatus);
                     */
 
-
-                    SPquery.Query = string.Format("<Where><And><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And><Eq><FieldRef Name='splitid'/><Value Type='Text'>{2}</Value></Eq></And></Where>", stateid, strFmrstatus, splitid);
-
-                    // SPquery.Query = "<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + stateid + "</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus1 + "</Value></Eq></And></Where>";
-                    // SPquery.RowLimit = 2000;
+                    if (splitid != "")
+                        SPquery.Query = string.Format("<Where><And><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And><Eq><FieldRef Name='splitid'/><Value Type='Text'>{2}</Value></Eq></And></Where>", stateid, strFmrstatus, splitid);
+                    else
+                    {
+                        
+                        SPquery.Query = string.Format("<Where><And><Eq><FieldRef Name='stateid'/><Value Type='Number'>{0}</Value></Eq><Eq><FieldRef Name='status'/><Value Type='Number'>" + strFmrstatus + "</Value></Eq></And></Where>", stateid, strFmrstatus);
+                    }
+                        // SPquery.RowLimit = 2000;
                     int i = 1, j = 1, k = 1, ii = 1;
                     destweb.AllowUnsafeUpdates = true;
                     workflowhistoryGuid = destList.ID; pipflow1Guid = pipflow1.ID; bulkpushapisGuid = sourceList.ID;
@@ -203,6 +234,7 @@ namespace CopyListItemsSsom
                     dynamic QueryParams, QueryParam;
                     foreach (SPListItem item in SPLists)
                     {
+                        isUICallback = true;
                         ItemID = item["ID"].ToString();
                         ItemStatus = item["status"].ToString();
                         if (item["pushurl"] != null)
@@ -476,7 +508,16 @@ namespace CopyListItemsSsom
                         Thread.Sleep(5000);
                     }
                     destweb.AllowUnsafeUpdates = false;
-
+                    if (isUICallback)
+                    {
+                        // UI call back required for appplication variable clear
+                        if (getConfigvalue("UICallbackURL") != "")
+                        {
+                            Console.WriteLine("UI Callback process" + getConfigvalue("UICallbackURL").Replace("!STATEID!", stateid));
+                            DoWebGetRequest(getConfigvalue("UICallbackURL").Replace("!STATEID!", stateid),"");
+                        }
+                        isUICallback = false;
+                    }
                 }
             }
             catch (Exception ex)
@@ -792,7 +833,7 @@ namespace CopyListItemsSsom
             }
 
         }
-        static private void CopyItemsThrougJSONFILE(SPWeb web, string stateid, string _Splitfile)
+        static private void CopyItemsThrougJSONFILE(SPWeb web, string stateid, string _Splitfile,ref bool _isStateFileAdded)
         {
             // below loop is for Verify the FIle is posted or not
             try
@@ -809,9 +850,10 @@ namespace CopyListItemsSsom
                         filePath += @"\normal";
                     SPList DList = web.Lists[bulkpushlistname];
 
-
+                    StringBuilder strSplitFMRS = new StringBuilder();
                     if (_Splitfile == "")
                     {
+                      
                         if (!System.IO.Directory.Exists(filePath)) return;
                         if (!System.IO.Directory.Exists(filePath + @"\processed\")) System.IO.Directory.CreateDirectory(filePath + @"\processed\");
                         DirectoryInfo di = new DirectoryInfo(filePath);
@@ -821,20 +863,20 @@ namespace CopyListItemsSsom
                             // Console.WriteLine(fi.Name);
                             if (fi.Name.EndsWith("_" + stateid + ".json"))
                             {
-
-                                StreamReader sr = new StreamReader(filePath + @"\" + fi.Name);
+                                _isStateFileAdded = true;
+                                fi.MoveTo(filePath + @"\processed\" + fi.Name);
+                                StreamReader sr = new StreamReader(filePath + @"\processed\" + fi.Name);
                                 string jsonString = sr.ReadToEnd();
                                 sr.Dispose();
                                 sr.Close();
-                                fi.MoveTo(filePath + @"\processed\" + fi.Name);
+                              
                                 ListBulkpushAPIS = Newtonsoft.Json.JsonConvert.DeserializeObject<List<BulkpushAPIS>>(jsonString);
-                                
+
                                 //start below logic implement for more performace date 9/1/2021 split file to more files
-                                int isplitCount = 100; 
+                                int isplitCount = 100, isplitTotCount=0;
                                 if (getConfigvalue("isplitCount") != "") isplitCount = int.Parse(getConfigvalue("isplitCount"));
                                 if (getConfigvalue("issplitfileandprocess").ToUpper() == "Y" && ListBulkpushAPIS.Count > isplitCount)
                                 {
-                                    StringBuilder strSplitFMRS = new StringBuilder();
                                     int i = 1;
                                     foreach (BulkpushAPIS item in ListBulkpushAPIS)
                                     {
@@ -849,30 +891,32 @@ namespace CopyListItemsSsom
                                             Console.WriteLine("Main file split into Name to: " + strSPlitfile);
                                             using (StreamWriter sw = System.IO.File.CreateText(strSPlitfile))
                                             {
-                                                sw.Write("[" + strSplitFMRS.ToString().TrimEnd(',') +"]" );
+                                                sw.Write("[" + strSplitFMRS.ToString().TrimEnd(',') + "]");
                                             }
                                             strSplitFMRS.Clear();
 
                                             // need to run process console here for same state with different file
                                             try
                                             {
-                                               // ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile");
+                                                // ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile");
                                                 ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath"));
                                                 //info.UseShellExecute = true;
                                                 info.Arguments = stateid + " " + strFilName + " splitfile";
                                                 Process.Start(info);
                                                 Console.WriteLine("ProcessStartInfo CALL Data " + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strFilName + " splitfile");
                                             }
-                                            catch(Exception ex) { Console.WriteLine("ProcessStartInfo CALL Exception " + ex.Message + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile"); }
+                                            catch (Exception ex) { Console.WriteLine("ProcessStartInfo CALL Exception " + ex.Message + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile"); }
+                                            isplitTotCount += isplitCount;
                                         }
 
                                         i++;
+                                        
                                     }
                                     // for last fmrs above 100 last 
                                     if (strSplitFMRS.ToString() != "")
                                     {
                                         string strSPlitfile = "";// fi.Name + "_" + (i - int.Parse("100")) + "_" + i.ToString() + ".json";
-                                        string strFilName = fi.Name + "_" + (i - isplitCount) + "_" + i.ToString() + ".json"; ;
+                                        string strFilName = fi.Name + "_" + isplitTotCount.ToString() + "_" + i.ToString() + ".json"; ;
                                         strSPlitfile = filePath + @"\splitprocessed\" + @"\" + strFilName;
                                         Console.WriteLine("Last file split into Name to: " + strSPlitfile);
 
@@ -899,6 +943,46 @@ namespace CopyListItemsSsom
                                     return;
 
                                 }
+                                else
+                                {
+
+
+                                    foreach (BulkpushAPIS item in ListBulkpushAPIS)
+                                    {
+                                        if (!System.IO.Directory.Exists(filePath + @"\splitprocessed\")) System.IO.Directory.CreateDirectory(filePath + @"\splitprocessed\");
+
+                                        strSplitFMRS.Append(Newtonsoft.Json.JsonConvert.SerializeObject(item) + ",");
+
+                                    }
+                                    if (strSplitFMRS.ToString() != "")
+                                    {
+                                        string strSPlitfile = "";// fi.Name + "_" + (i - int.Parse("100")) + "_" + i.ToString() + ".json";
+                                        string strFilName = fi.Name + "_1_" + ListBulkpushAPIS.Count.ToString() + ".json"; ;
+                                        strSPlitfile = filePath + @"\splitprocessed\" + @"\" + strFilName;
+                                        Console.WriteLine("Last file split into Name to: " + strSPlitfile);
+
+
+                                        using (StreamWriter sw = System.IO.File.CreateText(strSPlitfile))
+                                        {
+                                            sw.Write("[" + strSplitFMRS.ToString().TrimEnd(',') + "]");
+                                        }
+                                        strSplitFMRS.Clear();
+
+                                        // need to run process console here for same state with different file
+                                        try
+                                        {
+                                            // ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile");
+                                            ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath"));
+                                            //info.UseShellExecute = true;
+                                            info.Arguments = stateid + " " + strFilName + " splitfile";
+                                            Process.Start(info);
+                                            Console.WriteLine("ProcessStartInfo CALL Data " + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strFilName + " splitfile");
+                                        }
+                                        catch (Exception ex) { Console.WriteLine("ProcessStartInfo CALL Exception " + ex.Message + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile"); }
+
+                                    }
+                                    return;
+                                }
                             }
                         }
                     }
@@ -907,7 +991,8 @@ namespace CopyListItemsSsom
                     //    return;
                     else
                     {
-                        StreamReader sr = new StreamReader(filePath + @"\splitprocessed\" + _Splitfile );
+                        
+                        StreamReader sr = new StreamReader(filePath + @"\splitprocessed\" + _Splitfile);
                         string jsonString = sr.ReadToEnd();
                         sr.Dispose();
                         sr.Close();
@@ -960,7 +1045,7 @@ namespace CopyListItemsSsom
                                 oItem["status"] = "-4";
                             }
                             if (_Splitfile != "")
-                                oItem["splitid"] = _Splitfile;
+                                oItem["splitid"] = _Splitfile.Replace(".json", "_processed.json"); ;
                             var watch1 = System.Diagnostics.Stopwatch.StartNew();
                             watch1.Start();
                             // the code that you want to measure comes here
@@ -971,10 +1056,29 @@ namespace CopyListItemsSsom
                             SNO++;
                             //  if (SNO % 2000 == 0) break;
 
-                           // processedFIle = fi.Name;
+                            // processedFIle = fi.Name;
 
 
                         }
+
+                        // move file to process state
+                        string TargetFIle = filePath + @"\splitprocessed\" + _Splitfile.Replace(".json", "_processed.json");
+                        System.IO.File.Move(filePath + @"\splitprocessed\" + _Splitfile, TargetFIle);
+
+                        // now process for FMR & workflow lists
+                        // need to run process console here for same state with different file
+                        try
+                        {
+                            // ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath") + " " + stateid + " " + strSPlitfile + " splitfile");
+                            ProcessStartInfo info = new ProcessStartInfo(getConfigvalue("exepath"));
+                            //info.UseShellExecute = true;
+                            info.Arguments = stateid + " " + _Splitfile.Replace(".json", "_processed.json") + " splitfileprocess";
+                            Process.Start(info);
+                            Console.WriteLine("ProcessStartInfo CALL FMR WORKFLOW Data " + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + TargetFIle + " splitfile");
+                        }
+                        catch (Exception ex) { Console.WriteLine("ProcessStartInfo CALL FMR WORKFLOW Data Exception " + ex.Message + " :FIle path:->" + getConfigvalue("exepath") + " " + stateid + " " + TargetFIle + " splitfile"); }
+
+
                     }
 
                 }

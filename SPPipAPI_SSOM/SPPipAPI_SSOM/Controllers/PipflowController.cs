@@ -78,9 +78,9 @@ namespace SPPipAPI_SSOM.Controllers
                         if (status == null) status = "";
 
 
-                        SPQuery SPquery = new SPQuery();
+                        SPQuery camlQuery = new SPQuery();
 
-                        SPquery.Query = "<Where><And>" +
+                      /*  SPquery.Query = "<Where><And>" +
                               "<And><Eq><FieldRef Name='fmrtype' /><Value Type='Number'>" + fmrtype + "</Value></Eq>" +
                               "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>";
                         if (roleid != "")
@@ -88,11 +88,44 @@ namespace SPPipAPI_SSOM.Controllers
                         SPquery.Query += "<Eq><FieldRef Name='FY' /><Value Type='Text'>" + FY + "</Value></Eq>";
                         if (roleid != "")
                             SPquery.Query += "</And>";
-                        SPquery.Query += "</And></Where>";
+                        SPquery.Query += "</And></Where>";*/
+
+                        string strCamlQuery_temp = "<Where><And>!WHERE!</And></Where></Query></View>";
+                        string strWhereText_temp = "<Eq><FieldRef Name='!NAME!'/><Value Type='!TYPE!'>!VALUE!</Value></Eq>";
+                        // string strWhereText_temp_withoutAND = "<Eq><FieldRef Name='!NAME!'/><Value Type='!TYPE!'>!VALUE!</Value></Eq>";
+                        string strCamlQuery = "";
+                        int serarchCount = 0;
+                        if (status == null) status = "";
+                        // if (1 == 1) strCamlQuery += strWhereText_temp.Replace("!NAME!", "1").Replace("!TYPE!", "Text").Replace("!VALUE!", "1");
+                        if (FY != null && FY != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "FY").Replace("!TYPE!", "Text").Replace("!VALUE!", FY); } else FY = "";
+                        if (stateid != null && stateid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "stateid").Replace("!TYPE!", "Number").Replace("!VALUE!", stateid); } else stateid = "";
+                        if (roleid != null && roleid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "roleid").Replace("!TYPE!", "Number").Replace("!VALUE!", roleid); } else roleid = "";
+                        if (fmrtype != null && fmrtype != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "fmrtype").Replace("!TYPE!", "Number").Replace("!VALUE!", fmrtype); } else fmrtype = "";
 
 
 
-                        SPListItemCollection olists = web.Lists[cPipflowListName].GetItems(SPquery);
+                       
+                        /* old camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
+                        camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRef Name='Status'/><Value Type='Choice'>Not Started</Value></Eq>"
+                                                      + "<Eq><FieldRef Name='AssignedTo'/><Value Type='UserMulti'>{0}</Value></Eq><Contains><FieldRef Name='RelatedItems'/><Value Type='Text'>:{1},</Value></Contains>");
+                           + "</Where></Query></View>", Userid.TrimEnd(','), FMRID);*/
+                        strCamlQuery = strCamlQuery_temp.Replace("!WHERE!", strCamlQuery);
+                        if (serarchCount == 1) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
+                        // if (serarchCount > 2) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
+                        //  if (serarchCount == 0)
+                        strCamlQuery = "<View><RowLimit>100000</RowLimit></View>";
+
+                        camlQuery.ViewXml = "<Where><And>" +
+                                      "<And><Eq><FieldRef Name='fmrtype' /><Value Type='Number'>" + fmrtype + "</Value></Eq>" +
+                                      "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>";
+                        if (roleid != "")
+                            camlQuery.ViewXml += "<And><Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                        camlQuery.ViewXml += "<Eq><FieldRef Name='FY' /><Value Type='Text'>" + FY + "</Value></Eq>";
+                        if (roleid != "")
+                            camlQuery.ViewXml += "</And>";
+                        camlQuery.ViewXml += "</And></Where>";
+
+                        SPListItemCollection olists = web.Lists[cPipflowListName].GetItems(camlQuery);
 
                         respmsg = new List<fmrlist>();
 
@@ -153,6 +186,132 @@ namespace SPPipAPI_SSOM.Controllers
 
                 return getErrormessage(ex.Message);
             }
+        }
+
+        [Route("api/Pipflow/spgetBulkpushDetails")]
+
+        [HttpGet, HttpPost]
+        public HttpResponseMessage spgetBulkpushDetails(string stateid = "", string status = "", string roleid = "")
+        {
+
+            // prepare site connection
+            try
+            {
+                 List<BulkpushAPIDetails> respmsg = null;
+                using (SPSite site = new SPSite(strSiteURL))
+                {
+
+
+                    using (SPWeb web = site.OpenWeb())
+                    {
+                        // global parameters<View><Query>
+                        if (ClsGeneral.getConfigvalue("FROM_SSOM_URL") != "")
+                            return getHttpResponseMessage(ClsGeneral.DoWebGetRequest(ClsGeneral.getConfigvalue("FROM_SSOM_URL") + "/api/Pipflow/spgetBulkpushDetails" + ControllerContext.Request.RequestUri.Query.ToString(), ""));
+
+
+                        string strCamlQuery_temp = "<Where><And>!WHERE!</And></Where></Query></View>";
+                        string strWhereText_temp = "<Eq><FieldRef Name='!NAME!'/><Value Type='!TYPE!'>!VALUE!</Value></Eq>";
+                        // string strWhereText_temp_withoutAND = "<Eq><FieldRef Name='!NAME!'/><Value Type='!TYPE!'>!VALUE!</Value></Eq>";
+                        string strCamlQuery = "";
+                        int serarchCount = 0;
+
+                        // if (1 == 1) strCamlQuery += strWhereText_temp.Replace("!NAME!", "1").Replace("!TYPE!", "Text").Replace("!VALUE!", "1");
+                        if (stateid != null && stateid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "stateid").Replace("!TYPE!", "Number").Replace("!VALUE!", stateid); } else stateid = "";
+                        if (roleid != null && roleid != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "roleid").Replace("!TYPE!", "Number").Replace("!VALUE!", roleid); } else roleid = "";
+                        if (status != null && status != "") { serarchCount++; strCamlQuery += strWhereText_temp.Replace("!NAME!", "status").Replace("!TYPE!", "Number").Replace("!VALUE!", status); } else status = "";
+
+
+
+                        SPQuery camlQuery = new SPQuery();
+                        /* old camlQuery.ViewXml = "<View><RowLimit>10000</RowLimit></View>";
+                        camlQuery.ViewXml = string.Format("<View><Query><Where><Eq><FieldRef Name='Status'/><Value Type='Choice'>Not Started</Value></Eq>"
+                                                      + "<Eq><FieldRef Name='AssignedTo'/><Value Type='UserMulti'>{0}</Value></Eq><Contains><FieldRef Name='RelatedItems'/><Value Type='Text'>:{1},</Value></Contains>");
+                           + "</Where></Query></View>", Userid.TrimEnd(','), FMRID);*/
+
+                        strCamlQuery = "<View><RowLimit>100000</RowLimit></View>";
+
+                        if (serarchCount != 0)
+                        {
+                            strCamlQuery = strCamlQuery_temp.Replace("!WHERE!", strCamlQuery);
+                            if (serarchCount == 1) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
+                            // if (serarchCount > 2) strCamlQuery = strCamlQuery.Replace("<And>", "").Replace("</And>", "");
+                            //  if (serarchCount == 0)
+                            if (status != "" && stateid != "" && roleid != "")
+                                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                              "<And><Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>" +
+                                              "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq></And>";
+                            else if (status != "" && stateid != "")
+                                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                              "<Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>" +
+                                              "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                            else if (stateid != "" && roleid != "")
+                                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where><And>" +
+                                              "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>" +
+                                              "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                            else if (status != "")
+                                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                                     "<Eq><FieldRef Name='status' /><Value Type='Number'>" + status + "</Value></Eq>";
+
+                            else if (stateid != "")
+                                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                                     "<Eq><FieldRef Name='stateid' /><Value Type='Number'>" + stateid + "</Value></Eq>";
+                            else if (roleid != "")
+                                camlQuery.ViewXml = "<View><RowLimit>500000</RowLimit><Query><Where>" +
+                                     "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                            if (status != "" && stateid != "" && roleid != "")
+                                camlQuery.ViewXml += "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
+                            if (serarchCount > 1)
+                                camlQuery.ViewXml += "</And></Where></Query></View>";
+                            else
+                                camlQuery.ViewXml += "</Where></Query></View>";
+                        }
+
+                        SPListItemCollection olists = web.Lists[cPipflowListName].GetItems(camlQuery);
+                        
+                        respmsg = new List<BulkpushAPIDetails>();
+
+                        foreach (SPListItem oListItem in olists)
+                        {
+
+                         try
+                            {
+
+                                respmsg.Add(new BulkpushAPIDetails
+                                {
+                                    id = oListItem.ID.ToString(),
+                                    Title = (oListItem["Title"] != null) ? oListItem["Title"].ToString() : "",
+                                    status = (oListItem["status"] != null) ? oListItem["status"].ToString() : "",
+                                    stateid = (oListItem["stateid"] != null) ? oListItem["stateid"].ToString() : "",
+                                    roleid = (oListItem["roleid"] != null) ? oListItem["roleid"].ToString() : "",
+                                    pushurl = (oListItem["pushurl"] != null) ? oListItem["pushurl"].ToString() : "",
+                                    log = (oListItem["log"] != null) ? oListItem["log"].ToString() : "",
+                                    Created = (oListItem["Created"] != null) ? oListItem["Created"].ToString() : "",
+                                    Modified = (oListItem["Modified"] != null) ? oListItem["Modified"].ToString() : ""
+
+                                });
+                            }
+                            catch
+                            {
+
+
+                            }
+
+
+                        }
+
+                        return getHttpResponseMessage(JsonConvert.SerializeObject(respmsg));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+
+
+                return getErrormessage(ex.Message);
+            }
+
+
+
         }
 
         [System.Web.Http.Route("api/Pipflow/getGroupbyStates")]
@@ -264,7 +423,7 @@ namespace SPPipAPI_SSOM.Controllers
         }
 
 
-
+       
         [Route("api/Pipflow/spgetTaskDetails")]
         [HttpGet, HttpPost]
         public HttpResponseMessage spgetTaskDetails(string Listname, string TaskType, string stateid, string roleid = "", string Taskuser = null, string ReleatedItems = null, string status = "")
@@ -296,6 +455,8 @@ namespace SPPipAPI_SSOM.Controllers
                         if (roleid != "")
                             SPquery.Query += "<Eq><FieldRef Name='roleid' /><Value Type='Number'>" + roleid + "</Value></Eq>";
                         SPquery.Query += "</And></Where>";
+
+
                         List<pipflow> respmsg = new List<pipflow>();
 
                         foreach (SPListItem oListItem in web.Lists[cWfListName].GetItems(SPquery))
@@ -324,7 +485,7 @@ namespace SPPipAPI_SSOM.Controllers
                                 taskoutcome = (oListItem["TaskOutcome"] != null) ? oListItem["TaskOutcome"].ToString() : "",
                                 RelatedItems = (oListItem["relateditem"] != null) ? oListItem["relateditem"].ToString() : "",
                                 status = (oListItem["Status"] != null) ? oListItem["Status"].ToString() : "",
-                                assigned_to = (oListItem["Assigned_x0020_To"] != null) ? oListItem["relateditem"].ToString() : "",
+                                assigned_to = (oListItem["Assigned_x0020_To"] != null) ? oListItem["Assigned_x0020_To"].ToString() : "",
                                 approveduser_to = (oListItem["approveduser"] != null) ? oListItem["approveduser"].ToString() : "",
                                 areviewuser_to = (oListItem["areviewuser"] != null) ? oListItem["areviewuser"].ToString() : "",
                                 tasktype = (oListItem["tasktype"] != null) ? oListItem["tasktype"].ToString() : "",
