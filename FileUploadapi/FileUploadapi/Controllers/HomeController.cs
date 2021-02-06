@@ -219,11 +219,24 @@ namespace FileUploadapi.Controllers
             FileInformation fileInfo = Microsoft.SharePoint.Client.File.OpenBinaryDirect(ctx, file.ServerRelativeUrl);
 
             // result.Content.file
-            result.Content = new StreamContent(fileInfo.Stream);
+             result.Content = new StreamContent(fileInfo.Stream);
+             /*String fileName = HttpUtility.UrlEncode.gete.encode(File, "UTF-8");
+             fileName = URLDecoder.decode(fileName, "ISO8859_1");
+             response.setContentType("application/x-msdownload");
+             response.setHeader("Content-disposition", "attachment; filename=" + HttpUtility.UrlEncode(File)); */
+            //http://52.172.200.35:2014/sites/pippublic/Shared%20Documents/4.2%20ASSAM%20Part%201_27112020T193550.docx
             result.Content.Headers.Add("content-disposition", "attachment; filename=" + File);
+            /*  Response.Clear();
+              Response.ContentType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+              Response.AddHeader("Content-Disposition", "attachment; filename=myfile.docx");
+              Response.BinaryWrite(memStream.ToArray());
+              Response.Flush();
+              Response.Close();
+              Response.End();*/
             //fileInfo.Dispose();
-            
-            result.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+
+            //result.Content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+            result.Content.Headers.ContentType = new MediaTypeHeaderValue("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
             return result;
             
         }

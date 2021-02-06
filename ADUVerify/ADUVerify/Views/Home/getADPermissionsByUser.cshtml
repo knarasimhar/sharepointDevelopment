@@ -1,0 +1,21 @@
+﻿
+@{
+    ViewBag.Title = "getADPermissionsByUser";
+}
+
+<br />
+<br />
+<br />
+<br />
+<br />
+<br />
+<h1>Plz pass paramerters to this url like : [domainurl]/getADPermissionsByUser?uname=xxxx</h1>
+<ul>
+    @if (ViewBag.Message != null)
+    {
+        foreach (var person in ViewBag.Message)
+        {
+            <li>@person</li>
+        }
+    }
+</ul>

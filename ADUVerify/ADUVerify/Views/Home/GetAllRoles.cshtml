@@ -1,0 +1,17 @@
+﻿
+@{
+    ViewBag.Title = "GetAllRoles";
+}
+<br />
+<br />
+<br />
+<ul>
+    @if (ViewBag.Message != null)
+    {
+        foreach (var person in ViewBag.Message)
+        {
+            <li>@person</li>
+        }
+    }
+</ul>
+

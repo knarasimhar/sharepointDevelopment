@@ -39,12 +39,21 @@ namespace UpdateListItem
             // clientContext.Load(tasks, c => c.Where(t => t.Parent != null && t.Parent.Id == parentId));
            // Console.WriteLine("please enter the list Name to delete");
             string deleteListname ="bulkpushapis";
-            List oList = web.Lists.GetByTitle(deleteListname);
+            List oList;
+            if (args.Length>1)
+                oList = web.Lists.GetByTitle(args[0]);
+            else 
+            oList = web.Lists.GetByTitle(deleteListname);
 
             CamlQuery oQuery = new CamlQuery();
             //oQuery.ViewXml=  string.Format("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='Status'/><Value Type='Text'>{0}</Value></Eq><And><Eq><FieldRef Name='relateditem'/><Value Type='Text'>{1}</Value></Eq></And></Where></Query></View>", status, ReleatedItems);
             oQuery.ViewXml = "<View><RowLimit>20000</RowLimit></View>";
-            oQuery.ViewXml = "<View><Query><Where><Eq><FieldRef Name='status'/><Value Type='Number'>" + strStatus + "</Value></Eq></Where></Query></View>";
+
+            if (args.Length > 1)
+                oQuery.ViewXml = "<View><Query><Where><Eq><FieldRef Name='stateid'/><Value Type='Number'>" + args[1] + "</Value></Eq></Where></Query></View>";
+
+            else
+                oQuery.ViewXml = "<View><Query><Where><Eq><FieldRef Name='status'/><Value Type='Number'>" + strStatus + "</Value></Eq></Where></Query></View>";
             //oQuery.ViewXml=("<View Scope='RecursiveAll'><Query><Where><Eq><FieldRef Name='status'/><Value Type='Number'>1</Value></Eq><RowLimit>500</RowLimit></Where></Query></View>");
 
 
@@ -58,12 +67,16 @@ namespace UpdateListItem
 
                 try
                 {
-                    List oList1 = clientContext.Web.Lists.GetByTitle("bulkpushapis");
+                    List oList1;
+                    if (args.Length > 1)
+                         oList1 = clientContext.Web.Lists.GetByTitle(args[0]);
+                    else
+                         oList1 = clientContext.Web.Lists.GetByTitle("bulkpushapis");
                     ListItem oListItem1 = oList1.GetItemById(oListItem.Id);
                    // oListItem["Title"] = "Custom Title updated Programmatically.";
                     oListItem1.DeleteObject();
                     clientContext.ExecuteQuery();
-                    Console.WriteLine("SNO :" + i.ToString() + " Process id " + oListItem.Id.ToString() + " Title :" + oListItem["Title"] + " Status :" + oListItem["status"]);
+                    Console.WriteLine("SNO :" + i.ToString() + " Process id " + oListItem.Id.ToString() + " Title :" + oListItem["Title"]);
 
                     /*  oListItem.DeleteObject();
 
@@ -80,7 +93,10 @@ namespace UpdateListItem
                       }*/
                     i++;
                 }
-                catch { }
+                catch(Exception ex)
+                {
+                    Console.WriteLine("Delete exception data " + ex.Message);
+                }
             }
           //  clientContext.ExecuteQuery();
           //  clientContext.Dispose();
