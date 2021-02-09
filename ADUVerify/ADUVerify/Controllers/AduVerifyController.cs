@@ -110,10 +110,114 @@ namespace ADUVerify.Controllers
             }
             return getHttpResponseMessage(JsonConvert.SerializeObject(userlist));
         }
-        // tsfsdf sdkfjldsf 
+
         [System.Web.Http.Route("api/AduVerify/ADAddUser")]
         [System.Web.Http.HttpPost]
         public HttpResponseMessage ADAddUser(CreateUser model)
+        {
+
+            // verfiy user name before creation
+            DirectoryEntry myLdapConnection = createDirectoryEntry();
+            DirectorySearcher search = new DirectorySearcher(myLdapConnection);
+            search.Filter = "(sAMAccountName=" + model.UserName + ")";
+            model.Password = "Aduser@12345";
+            // search.PropertiesToLoad.Add("mail");
+            // because of AD password polacy all new users passwords set as Aduser@12345 
+
+            search.PropertiesToLoad.Add("telephoneNumber");
+
+            SearchResult result = search.FindOne();
+            if (result != null)
+
+            {
+
+                return getHttpResponseMessage(JsonConvert.SerializeObject("already exists"));
+            }
+            // Source: http://stackoverflow.com/a/2305871
+            using (var pc = new PrincipalContext(ContextType.Domain, domainName, userOU.Replace("National", model.OU)))
+            {
+                using (var up = new UserPrincipal(pc))
+                {
+                    // Create username and display name from firstname and lastname
+                    var userName = model.FirstName + "." + model.LastName;
+                    var displayName = model.FirstName + "_" + model.UserName + " " + model.LastName;
+                    // In a real scenario a randomised password would be preferred
+                    var password = model.Password;
+
+                    // Set the values for new user account
+
+                    up.Name = displayName;
+                    up.DisplayName = displayName;
+                    up.GivenName = model.FirstName;
+                    up.Surname = model.LastName;
+                    up.SamAccountName = model.UserName;
+                    // up.EmailAddress = model.Emailid;
+                    if (ConfigurationManager.AppSettings["AD_domainName"] != null)
+                        up.UserPrincipalName = model.UserName + "@" + ConfigurationManager.AppSettings["AD_domainName"].ToString();
+                    else
+                        up.UserPrincipalName = model.UserName + "@saathispdt.com";
+
+                    up.VoiceTelephoneNumber = model.Mobileno;
+
+                    up.SetPassword(password);
+                    up.Enabled = true;
+                    up.PasswordNeverExpires = true;
+
+                    try
+                    {
+                        // Attempt to save the account to AD
+                        up.Save();
+
+
+
+                        // apped groups
+                        if (model.groups != null)
+                            foreach (var _group in model.groups)
+                            {
+                                if (_group != null)
+                                    AddUserToGroup(model.UserName, _group);
+                            }
+                    }
+                    catch (Exception ex)
+                    {
+                        return getErrormessage(ex.Message);
+
+                    }
+
+                    // Add the department to the newly created AD user
+                    // Get the directory entry object for the user
+                    DirectoryEntry de = up.GetUnderlyingObject() as DirectoryEntry;
+                    // Set the department property to the value entered by the user
+
+
+                    de.Properties["department"].Value = model.Department;
+                    if (model.ReportingManager != null)
+                        de.Properties["manager"].Value = "CN=" + model.ReportingManager + "," + userOU;
+                    //int val = (int)de.Properties["userAccountControl"].Value;
+                    // de.Properties["userAccountControl"].Value = val & ~0x2;
+                    //de.Invoke("SetPassword", new object[] { model.Password });
+                    try
+                    {
+                        // Try to commit changes
+                        de.CommitChanges();
+                    }
+                    catch (Exception ex)
+                    {
+
+                        return getErrormessage(ex.Message);
+
+                    }
+                }
+            }
+
+            // Redirect to completed page if successful
+            return getHttpResponseMessage(JsonConvert.SerializeObject("success"));
+
+        }
+        // tsfsdf sdkfjldsf 
+        [System.Web.Http.Route("api/AduVerify/ADAddUser1")]
+        [System.Web.Http.HttpPost]
+        public HttpResponseMessage ADAddUser1(CreateUser model)
         {
 
             // verfiy user name before creation
@@ -222,6 +326,7 @@ namespace ADUVerify.Controllers
             return ldapConnection;
 
         }
+
         [System.Web.Http.Route("api/AduVerify/ADUpdateUser")]
         [System.Web.Http.HttpGet, System.Web.Http.HttpPost]
         public HttpResponseMessage ADUpdateUser(CreateUser model)
@@ -231,11 +336,11 @@ namespace ADUVerify.Controllers
 
                 DirectoryEntry myLdapConnection = createDirectoryEntry();
                 DirectorySearcher search = new DirectorySearcher(myLdapConnection);
-                search.Filter = "(sAMAccountName="  + model.UserName + ")";
+                search.Filter = "(sAMAccountName=" + model.UserName + ")";
 
-               // search.PropertiesToLoad.Add("mail");
+                // search.PropertiesToLoad.Add("mail");
                 search.PropertiesToLoad.Add("telephoneNumber");
-                
+
                 SearchResult result = search.FindOne();
                 if (result != null)
 
@@ -269,6 +374,7 @@ namespace ADUVerify.Controllers
             return getSuccessmessage("success");
 
         }
+        
       
         public void AddUserToGroup(string userId, string groupName)
         {
