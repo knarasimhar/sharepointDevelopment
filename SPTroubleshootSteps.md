@@ -25,18 +25,18 @@ PIP Sharepoint Troubleshoot steps
 ![](images/step6.PNG)
 
 4. step 4 :
-  1. Open the windows evernt viewer If any applications or system errors occures contact to system administrator refer the below image 
+   Open the windows evernt viewer If any applications or system errors occures contact to system administrator refer the below image 
     
 ![](images/step7.PNG)
 
 5. step 5 :
-  1. Open the windows IIS server and verify all Application pools are starting or not, If not contact to system administrator refer the below image 
+  Open the windows IIS server and verify all Application pools are starting or not, If not contact to system administrator refer the below image 
  
 ![](images/step8.PNG)
 
 6. step 5 :
 
-  1. Open the windows IIS server and verify all Application pools are starting or not, If not contact to system administrator refer the below image 
+   Open the windows IIS server and verify all Application pools are starting or not, If not contact to system administrator refer the below image 
  
   
 ![](images/step9.PNG)
