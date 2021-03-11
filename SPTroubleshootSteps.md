@@ -18,25 +18,25 @@ PIP Sharepoint Troubleshoot steps
 ![](images/step4.PNG)
 
 3. step 3 :
- 1. If step2 works fine verify the windows hilighted task sheduler in running condition or not  
- 2. Hightlited task sheduler not working start sheule imediatly 
- 3. and recheck the step 1 if any state ID file is shown in folder
+    1. If step2 works fine verify the windows hilighted task sheduler in running condition or not  
+    2. Hightlited task sheduler not working start sheule imediatly
+    3. and recheck the step 1 if any state ID file is shown in folder
 
 ![](images/step6.PNG)
 
 4. step 4 :
- 1. Open the windows evernt viewer If any applications or system errors occures contact to system administrator refer the below image 
+  1. Open the windows evernt viewer If any applications or system errors occures contact to system administrator refer the below image 
     
 ![](images/step7.PNG)
 
 5. step 5 :
- 1. Open the windows IIS server and verify all Application pools are starting or not, If not contact to system administrator refer the below image 
+  1. Open the windows IIS server and verify all Application pools are starting or not, If not contact to system administrator refer the below image 
  
 ![](images/step8.PNG)
 
 6. step 5 :
 
- 1. Open the windows IIS server and verify all Application pools are starting or not, If not contact to system administrator refer the below image 
+  1. Open the windows IIS server and verify all Application pools are starting or not, If not contact to system administrator refer the below image 
  
   
 ![](images/step9.PNG)
