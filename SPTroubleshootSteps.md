@@ -66,7 +66,7 @@
   Explore ADUVerify web application folder and verfiy all web.config key value fields are cofigured properly or not, If not contact to system administrator refer the below image 
  
   
-![](images/step15.PNG)
+![](images/step17.PNG)
 2. step 1 :
   Explore FileUPLOADAPI web application folder and verfiy all web.config key value fields are cofigured properly or not, If not contact to system administrator refer the below image 
  
